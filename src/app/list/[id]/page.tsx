@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,11 +33,7 @@ export default function ListDetailPage() {
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
 
-  useEffect(() => {
-    fetchListDetails();
-  }, [listId]);
-
-  const fetchListDetails = async () => {
+  const fetchListDetails = useCallback(async () => {
     try {
       // Fetch list title and group_id
       const { data: listData, error: listError } = await supabase
@@ -63,7 +59,11 @@ export default function ListDetailPage() {
       console.error("Error fetching list details:", error);
       toast.error("Failed to load list details");
     }
-  };
+  }, [listId]);
+
+  useEffect(() => {
+    fetchListDetails();
+  }, [fetchListDetails]);
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();

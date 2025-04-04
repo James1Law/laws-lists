@@ -1,10 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  images: {
-    unoptimized: true,
-  },
-  basePath: '/laws-lists',
+  // No special configuration needed for Vercel
 }
 
 module.exports = nextConfig 

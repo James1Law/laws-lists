@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,21 +33,7 @@ export default function GroupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  useEffect(() => {
-    // Check localStorage for access
-    const accessKey = `group_access_${groupId}`;
-    const hasStoredAccess = localStorage.getItem(accessKey) === "true";
-    setHasAccess(hasStoredAccess);
-
-    if (hasStoredAccess) {
-      fetchGroupDetails();
-    } else {
-      // Even if they don't have access, fetch the group name for display
-      fetchGroupName();
-    }
-  }, [groupId]);
-
-  const fetchGroupName = async () => {
+  const fetchGroupName = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("groups")
@@ -60,9 +46,9 @@ export default function GroupPage() {
     } catch (error) {
       console.error("Error fetching group name:", error);
     }
-  };
+  }, [groupId]);
 
-  const fetchGroupDetails = async () => {
+  const fetchGroupDetails = useCallback(async () => {
     setIsLoading(true);
     try {
       // Fetch lists
@@ -80,7 +66,20 @@ export default function GroupPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [groupId]);
+
+  useEffect(() => {
+    // Check localStorage for access
+    const accessKey = `group_access_${groupId}`;
+    const hasStoredAccess = localStorage.getItem(accessKey) === "true";
+    setHasAccess(hasStoredAccess);
+
+    if (hasStoredAccess) {
+      fetchGroupDetails();
+    } else {
+      fetchGroupName();
+    }
+  }, [groupId, fetchGroupDetails, fetchGroupName]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
