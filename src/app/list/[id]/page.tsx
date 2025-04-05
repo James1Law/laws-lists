@@ -26,6 +26,8 @@ export default function ListDetailPage() {
   const params = useParams();
   const listId = params.id as string;
   const [listTitle, setListTitle] = useState("");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitleContent, setEditTitleContent] = useState("");
   const [groupId, setGroupId] = useState<string | null>(null);
   const [items, setItems] = useState<ListItem[]>([]);
   const [newItemContent, setNewItemContent] = useState("");
@@ -162,6 +164,32 @@ export default function ListDetailPage() {
     }
   };
 
+  const handleSaveTitle = async () => {
+    if (!editTitleContent.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from("lists")
+        .update({ title: editTitleContent.trim() })
+        .eq("id", listId);
+
+      if (error) throw error;
+
+      setListTitle(editTitleContent.trim());
+      setEditingTitle(false);
+      setEditTitleContent("");
+      toast.success("List title updated successfully");
+    } catch (error) {
+      console.error("Error updating list title:", error);
+      toast.error("Failed to update list title");
+    }
+  };
+
+  const handleStartEditTitle = () => {
+    setEditingTitle(true);
+    setEditTitleContent(listTitle);
+  };
+
   return (
     <div className="min-h-screen p-4">
       <Toaster position="top-center" />
@@ -190,7 +218,41 @@ export default function ListDetailPage() {
 
         <div className="bg-white rounded-lg border shadow-sm">
           <div className="flex items-center justify-between p-3 border-b">
-            <h1 className="text-lg font-semibold">{listTitle}</h1>
+            {editingTitle ? (
+              <div className="flex items-center gap-2 flex-1">
+                <Input
+                  value={editTitleContent}
+                  onChange={(e) => setEditTitleContent(e.target.value)}
+                  className="h-8 text-sm flex-1"
+                />
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    onClick={handleSaveTitle}
+                    className="h-8 px-3 text-sm"
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    onClick={() => setEditingTitle(false)}
+                    variant="outline"
+                    className="h-8 px-3 text-sm"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-1">
+                <h1 className="text-lg font-semibold flex-1">{listTitle}</h1>
+                <Button
+                  onClick={handleStartEditTitle}
+                  variant="outline"
+                  className="h-7 px-2 text-xs"
+                >
+                  Edit
+                </Button>
+              </div>
+            )}
           </div>
           <div className="p-3">
             <form onSubmit={handleAddItem}>
