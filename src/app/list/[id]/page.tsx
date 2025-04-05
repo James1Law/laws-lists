@@ -33,6 +33,7 @@ export default function ListDetailPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [confirmingItem, setConfirmingItem] = useState<string | null>(null);
 
   const fetchListDetails = useCallback(async () => {
     try {
@@ -97,21 +98,49 @@ export default function ListDetailPage() {
   };
 
   const handleToggleComplete = async (itemId: string, currentStatus: boolean) => {
+    if (currentStatus) {
+      // If item is already marked as bought, unmark it without confirmation
+      try {
+        const { error } = await supabase
+          .from("list_items")
+          .update({ is_completed: false })
+          .eq("id", itemId);
+
+        if (error) throw error;
+
+        setItems(items.map(item => 
+          item.id === itemId 
+            ? { ...item, is_completed: false }
+            : item
+        ));
+      } catch (error) {
+        console.error("Error updating item:", error);
+        toast.error("Failed to update item");
+      }
+    } else {
+      // If marking as bought, show confirmation first
+      setConfirmingItem(itemId);
+    }
+  };
+
+  const handleConfirmComplete = async (itemId: string) => {
     try {
       const { error } = await supabase
         .from("list_items")
-        .update({ is_completed: !currentStatus })
+        .update({ is_completed: true })
         .eq("id", itemId);
 
       if (error) throw error;
 
       setItems(items.map(item => 
         item.id === itemId 
-          ? { ...item, is_completed: !currentStatus }
+          ? { ...item, is_completed: true }
           : item
       ));
+      setConfirmingItem(null);
+      toast.success("Item marked as bought");
     } catch (error) {
-      console.error("Error toggling item:", error);
+      console.error("Error updating item:", error);
       toast.error("Failed to update item");
     }
   };
@@ -285,7 +314,9 @@ export default function ListDetailPage() {
             {items.map((item) => (
               <div 
                 key={item.id} 
-                className="bg-white rounded-lg border shadow-sm"
+                className={`bg-white rounded-lg border shadow-sm ${
+                  item.is_completed ? 'bg-gray-50 border-gray-200' : ''
+                }`}
               >
                 {editingItem === item.id ? (
                   <div className="flex items-center gap-2 p-2">
@@ -310,6 +341,25 @@ export default function ListDetailPage() {
                       </Button>
                     </div>
                   </div>
+                ) : confirmingItem === item.id ? (
+                  <div className="flex items-center justify-between p-2">
+                    <span className="text-sm text-gray-600">Mark "{item.content}" as bought?</span>
+                    <div className="flex gap-1 shrink-0">
+                      <Button
+                        onClick={() => handleConfirmComplete(item.id)}
+                        className="h-7 px-2 text-xs bg-green-500 hover:bg-green-600"
+                      >
+                        Yes
+                      </Button>
+                      <Button
+                        onClick={() => setConfirmingItem(null)}
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                      >
+                        No
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-between p-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -319,13 +369,16 @@ export default function ListDetailPage() {
                         onChange={() => handleToggleComplete(item.id, item.is_completed)}
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0"
                       />
-                      <span 
-                        className={`text-sm truncate ${
-                          item.is_completed ? "line-through text-gray-500" : ""
-                        }`}
-                      >
-                        {item.content}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm truncate">
+                          {item.content}
+                        </span>
+                        {item.is_completed && (
+                          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                            Bought
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-1 ml-2 shrink-0">
                       <Button
