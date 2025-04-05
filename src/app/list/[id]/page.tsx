@@ -343,7 +343,7 @@ export default function ListDetailPage() {
                   </div>
                 ) : confirmingItem === item.id ? (
                   <div className="flex items-center justify-between p-2">
-                    <span className="text-sm text-gray-600">Mark "{item.content}" as bought?</span>
+                    <span className="text-sm text-gray-600">Mark &ldquo;{item.content}&rdquo; as bought?</span>
                     <div className="flex gap-1 shrink-0">
                       <Button
                         onClick={() => handleConfirmComplete(item.id)}
