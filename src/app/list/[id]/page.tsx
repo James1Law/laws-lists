@@ -165,11 +165,11 @@ export default function ListDetailPage() {
   return (
     <div className="min-h-screen p-4">
       <Toaster position="top-center" />
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-3">
         <div className="flex items-center justify-between">
           <Link 
             href={groupId ? `/group/${groupId}` : '/'}
-            className="text-blue-500 hover:text-blue-600 flex items-center space-x-2 mb-4"
+            className="text-blue-500 hover:text-blue-600 flex items-center space-x-2"
           >
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
@@ -188,90 +188,106 @@ export default function ListDetailPage() {
           </Link>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">{listTitle}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAddItem} className="space-y-4">
-              <div className="flex space-x-2">
+        <div className="bg-white rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between p-3 border-b">
+            <h1 className="text-lg font-semibold">{listTitle}</h1>
+          </div>
+          <div className="p-3">
+            <form onSubmit={handleAddItem}>
+              <div className="flex gap-2">
                 <Input
                   value={newItemContent}
                   onChange={(e) => setNewItemContent(e.target.value)}
                   placeholder="Add new item"
-                  className="h-12 text-base"
+                  className="h-8 text-sm"
                 />
                 <Button
                   type="submit"
-                  disabled={isLoading || !newItemContent.trim()}
-                  className="h-12"
+                  disabled={!newItemContent.trim()}
+                  className="h-8 px-3 text-sm"
                 >
                   Add
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <div className="space-y-4">
-          {items.map((item) => (
-            <Card key={item.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4 flex-1">
-                    <input
-                      type="checkbox"
-                      checked={item.is_completed}
-                      onChange={() => handleToggleComplete(item.id, item.is_completed)}
-                      className="h-5 w-5"
+        {isLoading ? (
+          <div className="text-center py-2 text-sm text-gray-500">Loading items...</div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-2 text-sm text-gray-500">
+            No items yet. Add your first item above.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {items.map((item) => (
+              <div 
+                key={item.id} 
+                className="bg-white rounded-lg border shadow-sm"
+              >
+                {editingItem === item.id ? (
+                  <div className="flex items-center gap-2 p-2">
+                    <Input
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="h-8 text-sm flex-1"
                     />
-                    {editingItem === item.id ? (
-                      <div className="flex-1 flex space-x-2">
-                        <Input
-                          value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                          className="h-10"
-                        />
-                        <Button onClick={handleSaveEdit} className="h-10">
-                          Save
-                        </Button>
-                        <Button
-                          onClick={() => setEditingItem(null)}
-                          variant="outline"
-                          className="h-10"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className={item.is_completed ? "line-through text-gray-500" : ""}>
+                    <div className="flex gap-1 shrink-0">
+                      <Button
+                        onClick={handleSaveEdit}
+                        className="h-8 px-3 text-sm"
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        onClick={() => setEditingItem(null)}
+                        variant="outline"
+                        className="h-8 px-3 text-sm"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={item.is_completed}
+                        onChange={() => handleToggleComplete(item.id, item.is_completed)}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                      />
+                      <span 
+                        className={`text-sm truncate ${
+                          item.is_completed ? "line-through text-gray-500" : ""
+                        }`}
+                      >
                         {item.content}
                       </span>
-                    )}
-                  </div>
-                  {editingItem !== item.id && (
-                    <div className="flex space-x-2">
+                    </div>
+                    <div className="flex gap-1 ml-2 shrink-0">
                       <Button
                         onClick={() => handleStartEdit(item)}
                         variant="outline"
-                        className="h-10"
+                        className="h-7 px-2 text-xs min-w-[48px]"
                       >
                         Edit
                       </Button>
                       <Button
                         onClick={() => handleDeleteItem(item.id)}
                         variant="destructive"
-                        className="h-10"
+                        className="h-7 px-2 text-xs min-w-[48px]"
                       >
                         Delete
                       </Button>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

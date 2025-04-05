@@ -51,6 +51,16 @@ export default function GroupPage() {
   const fetchGroupDetails = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Fetch group name
+      const { data: groupData, error: groupError } = await supabase
+        .from("groups")
+        .select("name")
+        .eq("id", groupId)
+        .single();
+
+      if (groupError) throw groupError;
+      setGroupName(groupData.name);
+
       // Fetch lists
       const { data: listsData, error: listsError } = await supabase
         .from("lists")
@@ -222,7 +232,7 @@ export default function GroupPage() {
   return (
     <div className="min-h-screen p-4">
       <Toaster position="top-center" />
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-3">
         <div className="flex items-center justify-between">
           <Link 
             href="/"
@@ -245,48 +255,62 @@ export default function GroupPage() {
           </Link>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">{groupName}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleCreateList} className="space-y-4">
-              <div className="flex space-x-2">
+        <div className="bg-white rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between p-3 border-b">
+            <h1 className="text-lg font-semibold">{groupName}</h1>
+          </div>
+          <div className="p-3">
+            <form onSubmit={handleCreateList}>
+              <div className="flex gap-2">
                 <Input
                   value={newListTitle}
                   onChange={(e) => setNewListTitle(e.target.value)}
                   placeholder="Enter list title"
-                  className="h-12 text-base"
+                  className="h-8 text-sm"
                 />
                 <Button
                   type="submit"
                   disabled={!newListTitle.trim()}
-                  className="h-12"
+                  className="h-8 px-3 text-sm"
                 >
                   Create
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {isLoading ? (
-          <div className="text-center py-8">Loading lists...</div>
+          <div className="text-center py-2 text-sm text-gray-500">Loading lists...</div>
         ) : lists.length === 0 ? (
-          <Card className="p-8">
-            <div className="text-center text-gray-500">
-              <p>No lists found. Create your first list above.</p>
-            </div>
-          </Card>
+          <div className="text-center py-2 text-sm text-gray-500">
+            No lists yet. Create your first list above.
+          </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {lists.map((list) => (
-              <Link key={list.id} href={`/list/${list.id}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <CardTitle className="text-xl">{list.title}</CardTitle>
-                  </CardHeader>
-                </Card>
+              <Link 
+                key={list.id} 
+                href={`/list/${list.id}`}
+                className="block bg-white rounded-lg border shadow-sm hover:border-blue-200 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center justify-between py-3 px-4">
+                  <span className="text-sm font-medium">{list.title}</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-gray-400"
+                  >
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </div>
               </Link>
             ))}
           </div>
