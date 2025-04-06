@@ -2,12 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AcceptInviteClient from "./AcceptInviteClient";
+import { type PageProps } from 'next';
 
-export default async function AcceptInvitePage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function AcceptInvitePage(props: PageProps) {
+  const searchParams = props.searchParams;
   const token = typeof searchParams?.token === 'string' ? searchParams.token : undefined;
   const cookieStore = cookies();
   const supabase = createServerClient(
