@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import { createBrowserClient } from "@supabase/ssr";
 
 // Initialize Supabase client
@@ -14,16 +15,31 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   {
-    auth: {
-      flowType: 'pkce',
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true
-    }
+    cookies: {
+      get(name: string) {
+        const cookie = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith(`${name}=`));
+        return cookie ? cookie.split("=")[1] : "";
+      },
+      set(name: string, value: string, options: { path?: string; domain?: string; secure?: boolean; maxAge?: number; sameSite?: "strict" | "lax" | "none" }) {
+        document.cookie = Object.entries({
+          ...options,
+          name,
+          value,
+        })
+          .map(([key, value]) => `${key}=${value}`)
+          .join("; ");
+      },
+      remove(name: string, options: { path?: string; domain?: string }) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${options.path || "/"}`;
+      },
+    },
   }
 );
 
 export default function AuthPage() {
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [signUpSuccess, setSignUpSuccess] = useState(false);
   const [signUpData, setSignUpData] = useState({
@@ -36,6 +52,18 @@ export default function AuthPage() {
     password: "",
   });
 
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // If there's a redirectTo parameter, use that, otherwise go to dashboard
+        const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+        window.location.href = redirectTo;
+      }
+    };
+    checkSession();
+  }, [searchParams]);
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -45,6 +73,12 @@ export default function AuthPage() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: signUpData.email,
         password: signUpData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            name: signUpData.name,
+          },
+        },
       });
 
       if (authError) throw authError;
@@ -92,8 +126,9 @@ export default function AuthPage() {
 
       if (data.session) {
         toast.success("Signed in successfully!");
-        // Force a hard navigation to ensure proper session handling
-        window.location.href = "/dashboard";
+        // Get the redirectTo parameter or default to dashboard
+        const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+        window.location.href = redirectTo;
       } else {
         throw new Error("Failed to establish session");
       }
@@ -111,7 +146,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <Toaster position="top-center" />
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader className="space-y-1">

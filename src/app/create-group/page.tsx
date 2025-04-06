@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 
@@ -72,7 +72,6 @@ export default function CreateGroupPage() {
 
   return (
     <div className="min-h-screen p-4 bg-gray-50">
-      <Toaster position="top-center" />
       <div className="max-w-md mx-auto space-y-4">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Create New Group</h1>

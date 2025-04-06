@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import { createBrowserClient } from "@supabase/ssr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -107,9 +107,8 @@ export default function DashboardClient({ initialGroups, userId }: DashboardClie
   };
 
   return (
-    <div className="min-h-screen p-4 bg-gray-50">
-      <Toaster position="top-center" />
-      <div className="max-w-xl mx-auto space-y-4">
+    <div className="container mx-auto p-4 max-w-4xl">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">My Groups</h1>
           <div className="flex items-center gap-2">

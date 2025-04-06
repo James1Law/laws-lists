@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import { createBrowserClient } from "@supabase/ssr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,9 +84,8 @@ export default function AcceptInviteClient(props: AcceptInviteClientProps) {
   };
 
   return (
-    <div className="min-h-screen p-4 bg-gray-50">
-      <Toaster position="top-center" />
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+      <div className="w-full max-w-md">
         <Card>
           <CardHeader>
             <CardTitle className="text-xl text-center">
