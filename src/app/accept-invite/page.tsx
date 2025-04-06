@@ -3,14 +3,13 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AcceptInviteClient from "./AcceptInviteClient";
 
-interface PageProps {
-  params: { [key: string]: string | string[] | undefined };
-  searchParams: { [key: string]: string | string[] | undefined };
-}
+type SearchParams = { [key: string]: string | string[] | undefined };
 
 export default async function AcceptInvitePage({
   searchParams,
-}: PageProps) {
+}: {
+  searchParams: SearchParams;
+}) {
   const token = typeof searchParams.token === 'string' ? searchParams.token : undefined;
   const supabase = createServerComponentClient({ cookies });
 
