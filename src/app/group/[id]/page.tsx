@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import ShareGroup from "./ShareGroup";
+import { type PageProps } from "next";
 
 interface Group {
   id: string;
@@ -10,9 +11,9 @@ interface Group {
   created_at: string;
 }
 
-export default async function GroupPage(props: { params: { id: string } }) {
+export default async function GroupPage(props: PageProps) {
   const { params } = props;
-  const groupId = params.id;
+  const groupId = params.id as string;
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
