@@ -16,7 +16,7 @@ interface Invite {
 }
 
 export default async function AcceptInvitePage(props: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
   const { searchParams } = props;
   const token = typeof searchParams?.token === 'string' ? searchParams.token : undefined;
