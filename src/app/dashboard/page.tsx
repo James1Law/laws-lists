@@ -53,7 +53,10 @@ export default async function DashboardPage() {
   }
 
   // Transform the data to get just the groups
-  const groups = userGroups.map((userGroup) => (userGroup as UserGroup).groups);
+  const groups = userGroups.map((userGroup) => {
+    const typedGroup = userGroup as unknown as UserGroup;
+    return typedGroup.groups;
+  });
 
   return <DashboardClient initialGroups={groups} userId={session.user.id} />;
 } 
