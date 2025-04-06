@@ -84,16 +84,21 @@ export default function ShareGroup({ groupId, isOwner, groupName }: ShareGroupPr
       // Reset form
       setEmail("");
       setIsDialogOpen(false);
-    } catch (error: Error) {
-      console.error("Error sending invite:", error);
-      toast.error(
-        error.message === 'Failed to send invite email'
-          ? "Failed to send invite email. The invite was created but email delivery failed."
-          : "Failed to create invite"
-      );
-
-      // If the invite was created but email failed, keep the dialog open
-      if (error.message !== 'Failed to send invite email') {
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Error sending invite:", error);
+        toast.error(
+          error.message === 'Failed to send invite email'
+            ? "Failed to send invite email. The invite was created but email delivery failed."
+            : "Failed to create invite"
+        );
+        // If the invite was created but email failed, keep the dialog open
+        if (error.message !== 'Failed to send invite email') {
+          setIsDialogOpen(false);
+        }
+      } else {
+        console.error("Unknown error:", error);
+        toast.error("An unknown error occurred");
         setIsDialogOpen(false);
       }
     } finally {

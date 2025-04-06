@@ -45,9 +45,14 @@ export default function DashboardClient({ initialGroups, userId }: DashboardClie
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       router.push("/");
-    } catch (error: Error) {
-      console.error("Error signing out:", error);
-      toast.error(error.message || "Failed to sign out");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Error signing out:", error);
+        toast.error(error.message || "Failed to sign out");
+      } else {
+        console.error("Unknown error:", error);
+        toast.error("An unknown error occurred");
+      }
     }
   };
 
@@ -88,9 +93,14 @@ export default function DashboardClient({ initialGroups, userId }: DashboardClie
       setIsDialogOpen(false);
       toast.success("Group created successfully");
       router.push(`/group/${group.id}`);
-    } catch (error: Error) {
-      console.error("Error creating group:", error);
-      toast.error(error.message || "Failed to create group");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Error creating group:", error);
+        toast.error(error.message || "Failed to create group");
+      } else {
+        console.error("Unknown error:", error);
+        toast.error("An unknown error occurred");
+      }
     } finally {
       setIsCreating(false);
     }
