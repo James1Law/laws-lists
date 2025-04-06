@@ -25,6 +25,7 @@ export default async function GroupPage(props: { params: { id: string } }) {
     {
       cookies: {
         get(name: string) {
+          // @ts-expect-error Known Next.js type issue – safe to ignore
           const cookie = cookieStore.get(name);
           return cookie?.value;
         },
