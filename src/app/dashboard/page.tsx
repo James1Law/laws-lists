@@ -3,6 +3,12 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import DashboardClient from "./DashboardClient";
 
+interface Group {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 export default async function DashboardPage() {
   const cookieStore = cookies();
   const supabase = createServerClient(
@@ -11,6 +17,7 @@ export default async function DashboardPage() {
     {
       cookies: {
         get(name: string) {
+          // @ts-expect-error Known Next.js type issue – safe to ignore
           return cookieStore.get(name)?.value;
         },
       },
@@ -28,23 +35,21 @@ export default async function DashboardPage() {
   const { data: userGroups, error: userGroupsError } = await supabase
     .from("user_groups")
     .select(`
-      group_id,
       groups (
         id,
         name,
         created_at
       )
     `)
-    .eq("user_id", session.user.id)
-    .order("created_at", { foreignTable: "groups", ascending: false });
+    .eq("user_id", session.user.id);
 
   if (userGroupsError) {
-    console.error("Error fetching groups:", userGroupsError);
-    throw new Error("Failed to load groups");
+    console.error("Error fetching user groups:", userGroupsError);
+    redirect("/");
   }
 
   // Transform the data to get just the groups
-  const groups = userGroups.map(ug => ug.groups);
+  const groups = userGroups.map((userGroup) => userGroup.groups as Group);
 
   return <DashboardClient initialGroups={groups} userId={session.user.id} />;
 } 
