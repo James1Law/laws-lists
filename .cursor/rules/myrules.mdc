@@ -1,6 +1,6 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: true
 ---
 
@@ -15,5 +15,18 @@ Search the whole project and update all catch blocks to use (error: unknown) and
 Regularly audit and upgrade outdated or deprecated packages, especially from Supabase and Next.js.
 All sensitive values (e.g., Supabase keys, URLs) must be stored in .env and referenced via process.env.
 Run this command locally before pushing: npm run build && npm run lint && tsc --noEmit You can wrap this into a script called check-before-push and add it as a Husky pre-push hook.
+This project uses Vercel exclusively for deployment.
+
+❌ Do not:
+	•	Add .github/workflows files related to GitHub Pages (e.g. deploy.yml, gh-pages.yml)
+	•	Use the gh-pages npm package
+	•	Add "deploy" scripts targeting the out/ folder
+	•	Add output: 'export' to next.config.js
+
+✅ Do:
+	•	Use SSR-friendly features supported by Vercel
+	•	Deploy via Vercel’s GitHub integration only
+	•	Keep main as the production branch
+	•	Use .env.local for local dev and Vercel dashboard for prod secrets
 - You can @ files here
 - You can use markdown but dont have to
