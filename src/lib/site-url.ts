@@ -1,11 +1,11 @@
 export function getSiteUrl() {
-  // In production, use Vercel's URL
+  // First check for Vercel's automatic URL
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
   
-  // In development, use localhost
-  return process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:3000'
-    : 'https://james-laws-lists.vercel.app';
+  // Then use environment-specific URLs
+  return process.env.NODE_ENV === 'production'
+    ? 'https://james-laws-lists.vercel.app'  // Production URL
+    : 'http://localhost:3000';               // Development URL
 } 
