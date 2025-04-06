@@ -1,14 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { type Metadata } from 'next';
 import AcceptInviteClient from "./AcceptInviteClient";
 
-type AcceptInviteProps = {
-  searchParams: Record<string, string | string[] | undefined>;
-};
-
-export default async function AcceptInvitePage({ searchParams }: AcceptInviteProps) {
-  const token = typeof searchParams.token === 'string' ? searchParams.token : undefined;
+export default async function AcceptInvitePage({
+  searchParams,
+}: {
+  searchParams?: { [key: string]: string | string[] | undefined };
+}) {
+  const token = typeof searchParams?.token === 'string' ? searchParams.token : undefined;
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
