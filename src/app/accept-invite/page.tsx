@@ -2,7 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AcceptInviteClient from "./AcceptInviteClient";
-import { type PageProps } from "next";
 
 interface Group {
   id: string;
@@ -16,7 +15,9 @@ interface Invite {
   groups: Group;
 }
 
-export default async function AcceptInvitePage(props: PageProps) {
+export default async function AcceptInvitePage(props: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   const { searchParams } = props;
   const token = typeof searchParams?.token === 'string' ? searchParams.token : undefined;
   const cookieStore = cookies();
