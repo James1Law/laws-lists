@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createBrowserClient } from "@supabase/ssr";
 import Link from 'next/link';
-import { Label } from "@/components/ui/label";
 
 // Initialize Supabase client
 const supabase = createBrowserClient(
