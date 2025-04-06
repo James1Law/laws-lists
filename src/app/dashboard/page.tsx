@@ -9,6 +9,10 @@ interface Group {
   created_at: string;
 }
 
+interface UserGroup {
+  groups: Group;
+}
+
 export default async function DashboardPage() {
   const cookieStore = cookies();
   const supabase = createServerClient(
@@ -49,7 +53,7 @@ export default async function DashboardPage() {
   }
 
   // Transform the data to get just the groups
-  const groups = userGroups.map((userGroup) => userGroup.groups as Group);
+  const groups = userGroups.map((userGroup) => (userGroup as UserGroup).groups);
 
   return <DashboardClient initialGroups={groups} userId={session.user.id} />;
 } 
