@@ -10,11 +10,6 @@ interface Group {
   created_at: string;
 }
 
-interface UserGroup {
-  role: string;
-  groups: Group;
-}
-
 export default async function GroupPage(props: { params: { id: string } }) {
   const { params } = props;
   const groupId = params.id;
