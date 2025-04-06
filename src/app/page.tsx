@@ -13,7 +13,15 @@ import { createBrowserClient } from "@supabase/ssr";
 // Initialize Supabase client
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      flowType: 'pkce',
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  }
 );
 
 export default function AuthPage() {
@@ -57,7 +65,12 @@ export default function AuthPage() {
       if (dbError) throw dbError;
 
       toast.success("Account created successfully!");
-      router.push("/dashboard");
+      
+      // Wait for session to be established
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push("/dashboard");
+      }
     } catch (error: unknown) {
       console.error("Sign up error:", error);
       if (error instanceof Error) {
@@ -82,8 +95,14 @@ export default function AuthPage() {
 
       if (error) throw error;
 
-      toast.success("Signed in successfully!");
-      router.push("/dashboard");
+      // Wait for session to be established
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        toast.success("Signed in successfully!");
+        router.push("/dashboard");
+      } else {
+        throw new Error("Failed to establish session");
+      }
     } catch (error: unknown) {
       console.error("Sign in error:", error);
       if (error instanceof Error) {

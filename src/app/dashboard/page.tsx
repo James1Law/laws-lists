@@ -24,14 +24,24 @@ export default async function DashboardPage() {
           // @ts-expect-error Known Next.js type issue – safe to ignore
           return cookieStore.get(name)?.value;
         },
+        set(name: string, value: string, options: any) {
+          // This is only used for server-side cookie setting, which we don't need here
+          return;
+        },
+        remove(name: string, options: any) {
+          // This is only used for server-side cookie removal, which we don't need here
+          return;
+        },
       },
     }
   );
 
   // Get the current session
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  if (!session) {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+  // If there's no session or there's an error, redirect to the sign-in page
+  if (!session || sessionError) {
+    console.error("Session error:", sessionError);
     redirect("/");
   }
 
