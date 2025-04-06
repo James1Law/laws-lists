@@ -15,8 +15,10 @@ interface Invite {
   groups: Group;
 }
 
-export default async function AcceptInvitePage(props: any) {
-  const searchParams = props?.searchParams || {};
+export default async function AcceptInvitePage(props: unknown) {
+  const { searchParams } = props as {
+    searchParams: Record<string, string | string[] | undefined>;
+  };
   const token = typeof searchParams?.token === 'string' ? searchParams.token : undefined;
   const cookieStore = cookies();
   const supabase = createServerClient(
