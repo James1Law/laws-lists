@@ -6,7 +6,7 @@ import AcceptInviteClient from "./AcceptInviteClient";
 export default async function AcceptInvitePage({
   searchParams,
 }: {
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
   const token = typeof searchParams?.token === 'string' ? searchParams.token : undefined;
   const cookieStore = cookies();
