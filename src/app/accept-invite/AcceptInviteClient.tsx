@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Toaster, toast } from "sonner";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface AcceptInviteClientProps {
+type InviteStatus = "valid" | "invalid" | "accepted" | "unauthenticated" | "mismatch";
+
+interface ValidInviteProps {
+  status: "valid";
   invite: {
     id: string;
     groupId: string;
@@ -16,12 +20,28 @@ interface AcceptInviteClientProps {
   };
 }
 
-export default function AcceptInviteClient({ invite }: AcceptInviteClientProps) {
+interface InvalidInviteProps {
+  status: "invalid" | "accepted" | "mismatch";
+  message: string;
+  groupId?: string;
+}
+
+interface UnauthenticatedProps {
+  status: "unauthenticated";
+  message: string;
+  callbackUrl: string;
+}
+
+type AcceptInviteClientProps = ValidInviteProps | InvalidInviteProps | UnauthenticatedProps;
+
+export default function AcceptInviteClient(props: AcceptInviteClientProps) {
   const router = useRouter();
   const [isAccepting, setIsAccepting] = useState(false);
   const supabase = createClientComponentClient();
 
   const handleAcceptInvite = async () => {
+    if (props.status !== "valid") return;
+    
     setIsAccepting(true);
 
     try {
@@ -35,7 +55,7 @@ export default function AcceptInviteClient({ invite }: AcceptInviteClientProps) 
         .from("user_groups")
         .insert([{
           user_id: user.id,
-          group_id: invite.groupId,
+          group_id: props.invite.groupId,
           role: 'member'
         }]);
 
@@ -45,12 +65,15 @@ export default function AcceptInviteClient({ invite }: AcceptInviteClientProps) 
       const { error: inviteError } = await supabase
         .from("group_invites")
         .update({ accepted: true })
-        .eq("id", invite.id);
+        .eq("id", props.invite.id);
 
       if (inviteError) throw inviteError;
 
-      toast.success("Successfully joined group");
-      router.push(`/group/${invite.groupId}`);
+      toast.success("Successfully joined group", {
+        description: `You are now a member of ${props.invite.groupName}`,
+      });
+      
+      router.push(`/group/${props.invite.groupId}`);
     } catch (error: any) {
       console.error("Error accepting invite:", error);
       toast.error(error.message || "Failed to accept invite");
@@ -66,34 +89,70 @@ export default function AcceptInviteClient({ invite }: AcceptInviteClientProps) 
         <Card>
           <CardHeader>
             <CardTitle className="text-xl text-center">
-              Join Group: {invite.groupName}
+              {props.status === "valid" 
+                ? `Join ${props.invite.groupName}`
+                : "Group Invite"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-center text-gray-600">
-              You have been invited to join this group. Would you like to accept the invitation?
+              {props.status === "valid"
+                ? "You've been invited to join this group. Would you like to accept the invitation?"
+                : props.message}
             </p>
-            <div className="flex gap-2 justify-center">
-              <Button
-                onClick={handleAcceptInvite}
-                disabled={isAccepting}
-              >
-                {isAccepting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Accepting...
-                  </>
-                ) : (
-                  "Accept Invitation"
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => router.push("/dashboard")}
-                disabled={isAccepting}
-              >
-                Decline
-              </Button>
+
+            <div className="flex justify-center gap-2">
+              {props.status === "valid" && (
+                <>
+                  <Button
+                    onClick={handleAcceptInvite}
+                    disabled={isAccepting}
+                  >
+                    {isAccepting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Accepting...
+                      </>
+                    ) : (
+                      "Accept Invitation"
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/dashboard")}
+                    disabled={isAccepting}
+                  >
+                    Decline
+                  </Button>
+                </>
+              )}
+
+              {props.status === "unauthenticated" && (
+                <Link 
+                  href={`/?callbackUrl=${encodeURIComponent(props.callbackUrl)}`}
+                  className="w-full"
+                >
+                  <Button className="w-full">
+                    Sign In to Accept
+                  </Button>
+                </Link>
+              )}
+
+              {(props.status === "invalid" || props.status === "mismatch") && (
+                <Button
+                  onClick={() => router.push("/dashboard")}
+                >
+                  Go to Dashboard
+                </Button>
+              )}
+
+              {props.status === "accepted" && (
+                <Button
+                  onClick={() => router.push(`/group/${props.groupId}`)}
+                >
+                  View Group
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
