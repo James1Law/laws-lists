@@ -3,18 +3,22 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AcceptInviteClient from "./AcceptInviteClient";
 
+interface PageProps {
+  params: { [key: string]: string | string[] | undefined };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
 export default async function AcceptInvitePage({
   searchParams,
-}: {
-  searchParams: { token?: string };
-}) {
+}: PageProps) {
+  const token = typeof searchParams.token === 'string' ? searchParams.token : undefined;
   const supabase = createServerComponentClient({ cookies });
 
   // Get the current session
   const { data: { session } } = await supabase.auth.getSession();
 
   // If no token provided, redirect to dashboard
-  if (!searchParams.token) {
+  if (!token) {
     redirect("/dashboard");
   }
 
@@ -30,7 +34,7 @@ export default async function AcceptInvitePage({
         name
       )
     `)
-    .eq("token", searchParams.token)
+    .eq("token", token)
     .single();
 
   // Handle invalid or expired invite
@@ -57,7 +61,7 @@ export default async function AcceptInvitePage({
   // Handle not logged in
   if (!session) {
     // Save the current URL to redirect back after login
-    const callbackUrl = `/accept-invite?token=${searchParams.token}`;
+    const callbackUrl = `/accept-invite?token=${token}`;
     return (
       <AcceptInviteClient
         status="unauthenticated"
@@ -85,7 +89,7 @@ export default async function AcceptInvitePage({
         id: invite.id,
         groupId: invite.groups.id,
         groupName: invite.groups.name,
-        token: searchParams.token
+        token: token
       }}
     />
   );
