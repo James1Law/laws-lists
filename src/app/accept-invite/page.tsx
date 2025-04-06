@@ -1,14 +1,15 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Metadata } from "next";
 import AcceptInviteClient from "./AcceptInviteClient";
 
-export default async function AcceptInvitePage({
-  searchParams,
-}: {
-  searchParams: { token?: string };
-}) {
-  const token = searchParams.token;
+type PageProps = {
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+const AcceptInvitePage = async ({ searchParams }: PageProps) => {
+  const token = typeof searchParams.token === 'string' ? searchParams.token : undefined;
   const supabase = createServerComponentClient({ cookies });
 
   // Get the current session
@@ -90,4 +91,6 @@ export default async function AcceptInvitePage({
       }}
     />
   );
-} 
+}
+
+export default AcceptInvitePage; 
