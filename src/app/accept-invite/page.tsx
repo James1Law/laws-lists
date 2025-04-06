@@ -4,10 +4,8 @@ import { redirect } from "next/navigation";
 import AcceptInviteClient from "./AcceptInviteClient";
 
 export default async function AcceptInvitePage({
-  params,
   searchParams,
 }: {
-  params: {};
   searchParams: { token?: string };
 }) {
   const token = searchParams.token;
