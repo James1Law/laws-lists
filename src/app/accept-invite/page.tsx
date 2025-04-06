@@ -3,11 +3,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AcceptInviteClient from "./AcceptInviteClient";
 
-export default async function AcceptInvitePage({
-  searchParams,
-}: {
+type AcceptInviteProps = {
   searchParams: Record<string, string | string[] | undefined>;
-}) {
+};
+
+export default async function AcceptInvitePage({ searchParams }: AcceptInviteProps) {
   const token = typeof searchParams.token === 'string' ? searchParams.token : undefined;
   const cookieStore = cookies();
   const supabase = createServerClient(
