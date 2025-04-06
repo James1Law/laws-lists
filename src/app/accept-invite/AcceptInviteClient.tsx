@@ -8,8 +8,6 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type InviteStatus = "valid" | "invalid" | "accepted" | "unauthenticated" | "mismatch";
-
 interface ValidInviteProps {
   status: "valid";
   invite: {
@@ -74,7 +72,7 @@ export default function AcceptInviteClient(props: AcceptInviteClientProps) {
       });
       
       router.push(`/group/${props.invite.groupId}`);
-    } catch (error: any) {
+    } catch (error: Error) {
       console.error("Error accepting invite:", error);
       toast.error(error.message || "Failed to accept invite");
     } finally {

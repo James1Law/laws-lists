@@ -80,7 +80,7 @@ export default function ShareGroup({ groupId, isOwner, groupName }: ShareGroupPr
       // Reset form
       setEmail("");
       setIsDialogOpen(false);
-    } catch (error: any) {
+    } catch (error: Error) {
       console.error("Error sending invite:", error);
       toast.error(
         error.message === 'Failed to send invite email'
