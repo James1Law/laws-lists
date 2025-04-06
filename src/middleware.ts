@@ -29,11 +29,13 @@ export async function middleware(request: NextRequest) {
             name,
             value,
             ...options,
-            // Ensure secure cookies in production
-            secure: process.env.NODE_ENV === 'production',
+            // Always set secure in production
+            secure: true,
             sameSite: 'lax',
             httpOnly: true,
             path: '/',
+            // Set domain based on environment
+            domain: process.env.VERCEL_URL ? '.vercel.app' : undefined
           });
         },
         remove(name: string) {
