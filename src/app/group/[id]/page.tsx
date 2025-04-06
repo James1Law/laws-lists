@@ -4,7 +4,20 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import ShareGroup from "./ShareGroup";
 
-export default async function GroupPage({ params }: { params: { id: string } }) {
+interface Group {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+interface UserGroup {
+  role: string;
+  groups: Group;
+}
+
+export default async function GroupPage(props: { params: { id: string } }) {
+  const { params } = props;
+  const groupId = params.id;
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,7 +49,7 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
         created_at
       )
     `)
-    .eq("group_id", params.id)
+    .eq("group_id", groupId)
     .eq("user_id", session.user.id)
     .single();
 
