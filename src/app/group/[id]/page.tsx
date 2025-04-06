@@ -10,10 +10,8 @@ interface Group {
   created_at: string;
 }
 
-export default async function GroupPage(props: {
-  params: { id: string };
-}) {
-  const { params } = props;
+export default async function GroupPage(props: unknown) {
+  const { params } = props as { params: { id: string } };
   const groupId = params.id;
   const cookieStore = cookies();
   const supabase = createServerClient(
