@@ -25,20 +25,14 @@ export async function middleware(request: NextRequest) {
             return;
           }
 
-          // Get the hostname from the request
-          const hostname = request.headers.get('host') || '';
-          
           response.cookies.set({
             name,
             value,
             ...options,
-            // Always set secure in production
             secure: true,
             sameSite: 'lax',
             httpOnly: true,
             path: '/',
-            // Set domain based on the current hostname
-            domain: hostname.includes('vercel.app') ? hostname : undefined
           });
         },
         remove(name: string) {

@@ -11,7 +11,7 @@ export function getSiteUrl() {
   
   // Use the production URL if available
   if (process.env.NODE_ENV === 'production') {
-    return 'https://james-laws-lists-james1laws-projects.vercel.app';
+    return 'https://james-laws-lists.vercel.app';
   }
   
   // Default to localhost for development
