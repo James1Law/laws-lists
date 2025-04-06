@@ -40,9 +40,9 @@ export async function middleware(request: NextRequest) {
         persistSession: true,
         storageKey: 'supabase.auth.token',
         storage: {
-          getItem: (key) => {
+          getItem: (key: string): string | null => {
             const cookie = request.cookies.get(key);
-            return cookie?.value;
+            return cookie?.value ?? null;
           },
           setItem: (key, value) => {
             response.cookies.set({
