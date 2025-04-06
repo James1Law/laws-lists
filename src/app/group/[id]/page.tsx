@@ -1,6 +1,6 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import Link from "next/link";
 import ShareGroup from "./ShareGroup";
 
@@ -10,9 +10,7 @@ interface Group {
   created_at: string;
 }
 
-export default async function GroupPage(props: unknown) {
-  const { params } = props as { params: { id: string } };
-  const groupId = params.id;
+export default async function GroupPage({ params }: { params: { id: string } }) {
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,21 +18,22 @@ export default async function GroupPage(props: unknown) {
     {
       cookies: {
         get(name: string) {
-          // @ts-expect-error Known Next.js type issue – safe to ignore
           return cookieStore.get(name)?.value;
         },
-        // These methods are required by the type but not used in this server component
-        set() {},
-        remove() {},
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.delete({ name, ...options });
+        },
       },
     }
   );
 
-  // Get the current session
   const { data: { session } } = await supabase.auth.getSession();
-  
+
   if (!session) {
-    redirect("/");
+    redirect('/auth/sign-in');
   }
 
   // Fetch group details and check membership
@@ -48,7 +47,7 @@ export default async function GroupPage(props: unknown) {
         created_at
       )
     `)
-    .eq("group_id", groupId)
+    .eq("group_id", params.id)
     .eq("user_id", session.user.id)
     .single();
 

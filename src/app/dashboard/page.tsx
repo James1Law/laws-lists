@@ -1,4 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import DashboardClient from "./DashboardClient";
@@ -21,12 +21,14 @@ export default async function DashboardPage() {
     {
       cookies: {
         get(name: string) {
-          // @ts-expect-error Known Next.js type issue – safe to ignore
           return cookieStore.get(name)?.value;
         },
-        // These methods are required by the type but not used in this server component
-        set() {},
-        remove() {},
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.delete({ name, ...options });
+        },
       },
     }
   );
@@ -37,7 +39,7 @@ export default async function DashboardPage() {
   // If there's no session or there's an error, redirect to the sign-in page
   if (!session || sessionError) {
     console.error("Session error:", sessionError);
-    redirect("/");
+    redirect("/auth/sign-in");
   }
 
   // Fetch user's groups

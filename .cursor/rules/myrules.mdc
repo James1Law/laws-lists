@@ -1,0 +1,19 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# Your rule content
+Every file must compile without TypeScript or ESLint errors before pushing to main.
+Never push to main unless the branch builds successfully in a preview.
+Set up Husky and lint-staged so that TypeScript and ESLint checks run before each commit.
+Every page under /app must validate its params and searchParams types explicitly using inferred types or manual declarations.
+Ensure the page component uses correctly typed route parameters (params, searchParams) that match the latest Next.js standards.
+Search the entire project for unused imports or variables and remove them. Do not break any UI or functionality.
+Search the whole project and update all catch blocks to use (error: unknown) and safely check instance types.
+Regularly audit and upgrade outdated or deprecated packages, especially from Supabase and Next.js.
+All sensitive values (e.g., Supabase keys, URLs) must be stored in .env and referenced via process.env.
+Run this command locally before pushing: npm run build && npm run lint && tsc --noEmit You can wrap this into a script called check-before-push and add it as a Husky pre-push hook.
+- You can @ files here
+- You can use markdown but dont have to

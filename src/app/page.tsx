@@ -10,34 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { createBrowserClient } from "@supabase/ssr";
 
-// Initialize Supabase client
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    cookies: {
-      get(name: string) {
-        const cookie = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith(`${name}=`));
-        return cookie ? cookie.split("=")[1] : "";
-      },
-      set(name: string, value: string, options: { path?: string; domain?: string; secure?: boolean; maxAge?: number; sameSite?: "strict" | "lax" | "none" }) {
-        document.cookie = Object.entries({
-          ...options,
-          name,
-          value,
-        })
-          .map(([key, value]) => `${key}=${value}`)
-          .join("; ");
-      },
-      remove(name: string, options: { path?: string; domain?: string }) {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${options.path || "/"}`;
-      },
-    },
-  }
-);
-
 export default function AuthPage() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +24,11 @@ export default function AuthPage() {
     password: "",
   });
 
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -62,7 +39,7 @@ export default function AuthPage() {
       }
     };
     checkSession();
-  }, [searchParams]);
+  }, [searchParams, supabase.auth]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
