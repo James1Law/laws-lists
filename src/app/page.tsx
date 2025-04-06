@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,6 @@ const supabase = createBrowserClient(
 );
 
 export default function AuthPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [signUpSuccess, setSignUpSuccess] = useState(false);
   const [signUpData, setSignUpData] = useState({
