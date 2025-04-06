@@ -58,9 +58,13 @@ export default function CreateGroupPage() {
 
       toast.success("Group created successfully");
       router.push(`/group/${group.id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating group:", error);
-      toast.error(error.message || "Failed to create group");
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to create group");
+      }
     } finally {
       setIsLoading(false);
     }

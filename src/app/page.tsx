@@ -58,9 +58,13 @@ export default function AuthPage() {
 
       toast.success("Account created successfully!");
       router.push("/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Sign up error:", error);
-      toast.error(error.message || "Failed to create account");
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to create account");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -80,9 +84,13 @@ export default function AuthPage() {
 
       toast.success("Signed in successfully!");
       router.push("/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Sign in error:", error);
-      toast.error(error.message || "Failed to sign in");
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to sign in");
+      }
     } finally {
       setIsLoading(false);
     }
