@@ -4,7 +4,7 @@ import { getSiteUrl } from './lib/site-url';
 import type { CookieOptions } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
@@ -36,14 +36,14 @@ export async function middleware(request: NextRequest) {
             path: '/',
           });
         },
-        remove(name: string, options: CookieOptions) {
+        remove(name: string) {
           response.cookies.delete(name);
         },
       },
     }
   );
 
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const { data: { session } } = await supabase.auth.getSession();
 
   // Handle auth pages
   if (request.nextUrl.pathname === '/') {
