@@ -75,9 +75,9 @@ export default function AcceptInviteClient(props: AcceptInviteClientProps) {
       });
       
       router.push(`/group/${props.invite.groupId}`);
-    } catch (error: Error) {
+    } catch (error: unknown) {
       console.error("Error accepting invite:", error);
-      toast.error(error.message || "Failed to accept invite");
+      toast.error(error instanceof Error ? error.message : "Failed to accept invite");
     } finally {
       setIsAccepting(false);
     }
