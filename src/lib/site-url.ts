@@ -9,9 +9,9 @@ export function getSiteUrl() {
     return `https://${process.env.VERCEL_URL}`;
   }
   
-  // Finally, check for preview deployment URL
-  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+  // Use the production URL if available
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://james-laws-lists-james1laws-projects.vercel.app';
   }
   
   // Default to localhost for development

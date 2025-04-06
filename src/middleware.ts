@@ -25,6 +25,9 @@ export async function middleware(request: NextRequest) {
             return;
           }
 
+          // Get the hostname from the request
+          const hostname = request.headers.get('host') || '';
+          
           response.cookies.set({
             name,
             value,
@@ -34,8 +37,8 @@ export async function middleware(request: NextRequest) {
             sameSite: 'lax',
             httpOnly: true,
             path: '/',
-            // Set domain based on environment
-            domain: process.env.VERCEL_URL ? '.vercel.app' : undefined
+            // Set domain based on the current hostname
+            domain: hostname.includes('vercel.app') ? hostname : undefined
           });
         },
         remove(name: string) {
