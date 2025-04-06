@@ -3,6 +3,18 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AcceptInviteClient from "./AcceptInviteClient";
 
+interface Group {
+  id: string;
+  name: string;
+}
+
+interface Invite {
+  id: string;
+  email: string;
+  accepted: boolean;
+  groups: Group;
+}
+
 export default async function AcceptInvitePage(props: { searchParams: { [key: string]: string | string[] | undefined } }) {
   const { searchParams } = props;
   const token = typeof searchParams?.token === 'string' ? searchParams.token : undefined;
@@ -13,7 +25,8 @@ export default async function AcceptInvitePage(props: { searchParams: { [key: st
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          const cookie = cookieStore.get(name);
+          return cookie?.value;
         },
       },
     }
@@ -52,13 +65,15 @@ export default async function AcceptInvitePage(props: { searchParams: { [key: st
     );
   }
 
+  const typedInvite = invite as unknown as Invite;
+
   // Handle already accepted invite
-  if (invite.accepted) {
+  if (typedInvite.accepted) {
     return (
       <AcceptInviteClient
         status="accepted"
         message="This invite has already been accepted."
-        groupId={invite.groups.id}
+        groupId={typedInvite.groups.id}
       />
     );
   }
@@ -77,7 +92,7 @@ export default async function AcceptInvitePage(props: { searchParams: { [key: st
   }
 
   // Handle email mismatch
-  if (invite.email.toLowerCase() !== session.user.email?.toLowerCase()) {
+  if (typedInvite.email.toLowerCase() !== session.user.email?.toLowerCase()) {
     return (
       <AcceptInviteClient
         status="mismatch"
@@ -91,9 +106,9 @@ export default async function AcceptInvitePage(props: { searchParams: { [key: st
     <AcceptInviteClient
       status="valid"
       invite={{
-        id: invite.id,
-        groupId: invite.groups.id,
-        groupName: invite.groups.name,
+        id: typedInvite.id,
+        groupId: typedInvite.groups.id,
+        groupName: typedInvite.groups.name,
         token: token
       }}
     />

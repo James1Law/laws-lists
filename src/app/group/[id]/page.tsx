@@ -25,7 +25,8 @@ export default async function GroupPage(props: { params: { id: string } }) {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          const cookie = cookieStore.get(name);
+          return cookie?.value;
         },
       },
     }
@@ -59,7 +60,7 @@ export default async function GroupPage(props: { params: { id: string } }) {
   }
 
   const isOwner = userGroup.role === "owner";
-  const group = userGroup.groups;
+  const group = userGroup.groups as unknown as Group;
 
   return (
     <div className="min-h-screen p-4 bg-gray-50">
