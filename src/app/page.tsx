@@ -27,6 +27,7 @@ const supabase = createBrowserClient(
 export default function AuthPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [signUpSuccess, setSignUpSuccess] = useState(false);
   const [signUpData, setSignUpData] = useState({
     name: "",
     email: "",
@@ -64,13 +65,9 @@ export default function AuthPage() {
 
       if (dbError) throw dbError;
 
-      toast.success("Account created successfully!");
-      
-      // Wait for session to be established
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push("/dashboard");
-      }
+      // Show success message and hide form
+      setSignUpSuccess(true);
+      toast.success("Account created successfully! Please check your email.");
     } catch (error: unknown) {
       console.error("Sign up error:", error);
       if (error instanceof Error) {
@@ -88,18 +85,17 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: signInData.email,
         password: signInData.password,
       });
 
       if (error) throw error;
 
-      // Wait for session to be established
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (data.session) {
         toast.success("Signed in successfully!");
-        router.push("/dashboard");
+        // Force a hard navigation to ensure proper session handling
+        window.location.href = "/dashboard";
       } else {
         throw new Error("Failed to establish session");
       }
@@ -176,56 +172,81 @@ export default function AuthPage() {
               </TabsContent>
 
               <TabsContent value="sign-up">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="sign-up-name">Name</Label>
-                    <Input
-                      id="sign-up-name"
-                      placeholder="Your name"
-                      value={signUpData.name}
-                      onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })}
-                      required
-                      className="h-12 text-base"
-                    />
+                {signUpSuccess ? (
+                  <div className="text-center space-y-4">
+                    <div className="text-green-600 mb-4">
+                      <svg
+                        className="w-16 h-16 mx-auto"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold">Account Created!</h3>
+                    <p className="text-gray-600">
+                      Please check your email for a verification link to activate your account.
+                    </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sign-up-email">Email</Label>
-                    <Input
-                      id="sign-up-email"
-                      type="email"
-                      placeholder="name@example.com"
-                      value={signUpData.email}
-                      onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
-                      required
-                      className="h-12 text-base"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sign-up-password">Password</Label>
-                    <Input
-                      id="sign-up-password"
-                      type="password"
-                      value={signUpData.password}
-                      onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
-                      required
-                      className="h-12 text-base"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-base"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Creating account...</span>
-                      </div>
-                    ) : (
-                      "Create Account"
-                    )}
-                  </Button>
-                </form>
+                ) : (
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="sign-up-name">Name</Label>
+                      <Input
+                        id="sign-up-name"
+                        placeholder="Your name"
+                        value={signUpData.name}
+                        onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })}
+                        required
+                        className="h-12 text-base"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sign-up-email">Email</Label>
+                      <Input
+                        id="sign-up-email"
+                        type="email"
+                        placeholder="name@example.com"
+                        value={signUpData.email}
+                        onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                        required
+                        className="h-12 text-base"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sign-up-password">Password</Label>
+                      <Input
+                        id="sign-up-password"
+                        type="password"
+                        value={signUpData.password}
+                        onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+                        required
+                        className="h-12 text-base"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full h-12 text-base"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Creating account...</span>
+                        </div>
+                      ) : (
+                        "Create Account"
+                      )}
+                    </Button>
+                  </form>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
