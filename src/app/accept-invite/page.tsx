@@ -28,9 +28,11 @@ export default async function AcceptInvitePage(props: unknown) {
       cookies: {
         get(name: string) {
           // @ts-expect-error Known Next.js type issue – safe to ignore
-          const cookie = cookieStore.get(name);
-          return cookie?.value;
+          return cookieStore.get(name)?.value;
         },
+        // These methods are required by the type but not used in this server component
+        set() {},
+        remove() {},
       },
     }
   );

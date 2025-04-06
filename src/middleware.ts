@@ -40,11 +40,11 @@ export async function middleware(request: NextRequest) {
         persistSession: true,
         storageKey: 'supabase.auth.token',
         storage: {
-          getItem: (key: string): string | null => {
+          getItem: (key: string) => {
             const cookie = request.cookies.get(key);
             return cookie?.value ?? null;
           },
-          setItem: (key, value) => {
+          setItem: (key: string, value: string) => {
             response.cookies.set({
               name: key,
               value,
@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
               path: '/',
             });
           },
-          removeItem: (key) => {
+          removeItem: (key: string) => {
             response.cookies.delete(key);
           },
         },

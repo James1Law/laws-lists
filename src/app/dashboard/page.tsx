@@ -2,7 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import DashboardClient from "./DashboardClient";
-import type { CookieOptions } from "@supabase/ssr";
 
 interface Group {
   id: string;
@@ -25,12 +24,9 @@ export default async function DashboardPage() {
           // @ts-expect-error Known Next.js type issue – safe to ignore
           return cookieStore.get(name)?.value;
         },
-        set: (_name: string, _value: string, _options: CookieOptions) => {
-          // This is only used for server-side cookie setting, which we don't need here
-        },
-        remove: (_name: string, _options: CookieOptions) => {
-          // This is only used for server-side cookie removal, which we don't need here
-        },
+        // These methods are required by the type but not used in this server component
+        set() {},
+        remove() {},
       },
     }
   );
