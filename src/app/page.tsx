@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Toaster, toast } from "sonner";
 import { createClient } from '@supabase/supabase-js';
-import Link from 'next/link';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -13,152 +16,193 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-interface Group {
-  id: string;
-  name: string;
-  created_at: string;
-}
+export default function AuthPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [signUpData, setSignUpData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [signInData, setSignInData] = useState({
+    email: "",
+    password: "",
+  });
 
-export default function HomePage() {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [editingGroup, setEditingGroup] = useState<string | null>(null);
-  const [editGroupName, setEditGroupName] = useState("");
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-  useEffect(() => {
-    fetchGroups();
-  }, []);
-
-  const fetchGroups = async () => {
     try {
-      const { data, error } = await supabase
-        .from("groups")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // 1. Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: signUpData.email,
+        password: signUpData.password,
+      });
 
-      if (error) throw error;
-      setGroups(data || []);
-    } catch (error) {
-      console.error("Error fetching groups:", error);
-      toast.error("Failed to load groups");
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("No user data returned");
+
+      // 2. Insert into users table
+      const { error: dbError } = await supabase
+        .from("users")
+        .insert([
+          {
+            id: authData.user.id,
+            email: signUpData.email,
+            name: signUpData.name,
+          },
+        ]);
+
+      if (dbError) throw dbError;
+
+      toast.success("Account created successfully!");
+      router.push("/dashboard");
+    } catch (error: any) {
+      console.error("Sign up error:", error);
+      toast.error(error.message || "Failed to create account");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleStartEdit = (group: Group) => {
-    setEditingGroup(group.id);
-    setEditGroupName(group.name);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingGroup || !editGroupName.trim()) return;
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      const { error } = await supabase
-        .from("groups")
-        .update({ name: editGroupName.trim() })
-        .eq("id", editingGroup);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: signInData.email,
+        password: signInData.password,
+      });
 
       if (error) throw error;
 
-      setGroups(groups.map(group =>
-        group.id === editingGroup
-          ? { ...group, name: editGroupName.trim() }
-          : group
-      ));
-      setEditingGroup(null);
-      setEditGroupName("");
-      toast.success("Group name updated successfully");
-    } catch (error) {
-      console.error("Error updating group name:", error);
-      toast.error("Failed to update group name");
+      toast.success("Signed in successfully!");
+      router.push("/dashboard");
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      toast.error(error.message || "Failed to sign in");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
       <Toaster position="top-center" />
-      <div className="max-w-2xl mx-auto space-y-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold">My Groups</h1>
-          <Link 
-            href="/create-group"
-            className="bg-blue-500 hover:bg-blue-600 text-white h-8 px-3 text-sm rounded-md transition-colors inline-flex items-center"
-          >
-            Create New Group
-          </Link>
-        </div>
+      <div className="w-full max-w-sm">
+        <Card>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Laws Lists</CardTitle>
+            <CardDescription className="text-center">
+              Sign in to manage your lists
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="sign-in" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="sign-in">Sign In</TabsTrigger>
+                <TabsTrigger value="sign-up">Sign Up</TabsTrigger>
+              </TabsList>
 
-        {isLoading ? (
-          <div className="text-center py-2 text-sm text-gray-500">Loading groups...</div>
-        ) : groups.length === 0 ? (
-          <div className="bg-white rounded-lg border shadow-sm p-8">
-            <div className="text-center text-gray-500">
-              <p className="mb-4">No groups found</p>
-              <Link 
-                href="/create-group"
-                className="text-blue-500 hover:text-blue-600"
-              >
-                Create your first group
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {groups.map((group) => (
-              <div 
-                key={group.id}
-                className="bg-white rounded-lg border shadow-sm"
-              >
-                {editingGroup === group.id ? (
-                  <div className="flex items-center gap-2 p-2">
+              <TabsContent value="sign-in">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sign-in-email">Email</Label>
                     <Input
-                      value={editGroupName}
-                      onChange={(e) => setEditGroupName(e.target.value)}
-                      className="h-8 text-sm flex-1"
+                      id="sign-in-email"
+                      type="email"
+                      placeholder="name@example.com"
+                      value={signInData.email}
+                      onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
+                      required
+                      className="h-12 text-base"
                     />
-                    <div className="flex gap-1 shrink-0">
-                      <Button
-                        onClick={handleSaveEdit}
-                        className="h-8 px-3 text-sm"
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        onClick={() => setEditingGroup(null)}
-                        variant="outline"
-                        className="h-8 px-3 text-sm"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between p-2">
-                    <Link 
-                      href={`/group/${group.id}`}
-                      className="flex-1 min-w-0"
-                    >
-                      <span className="text-sm font-medium block truncate">
-                        {group.name}
-                      </span>
-                    </Link>
-                    <div className="flex gap-1 ml-2 shrink-0">
-                      <Button
-                        onClick={() => handleStartEdit(group)}
-                        variant="outline"
-                        className="h-7 px-2 text-xs min-w-[48px]"
-                      >
-                        Edit
-                      </Button>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sign-in-password">Password</Label>
+                    <Input
+                      id="sign-in-password"
+                      type="password"
+                      value={signInData.password}
+                      onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                      required
+                      className="h-12 text-base"
+                    />
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-base"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Signing in...</span>
+                      </div>
+                    ) : (
+                      "Sign In"
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="sign-up">
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sign-up-name">Name</Label>
+                    <Input
+                      id="sign-up-name"
+                      placeholder="Your name"
+                      value={signUpData.name}
+                      onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })}
+                      required
+                      className="h-12 text-base"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sign-up-email">Email</Label>
+                    <Input
+                      id="sign-up-email"
+                      type="email"
+                      placeholder="name@example.com"
+                      value={signUpData.email}
+                      onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                      required
+                      className="h-12 text-base"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sign-up-password">Password</Label>
+                    <Input
+                      id="sign-up-password"
+                      type="password"
+                      value={signUpData.password}
+                      onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+                      required
+                      className="h-12 text-base"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-base"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Creating account...</span>
+                      </div>
+                    ) : (
+                      "Create Account"
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
