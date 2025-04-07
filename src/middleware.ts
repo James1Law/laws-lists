@@ -43,9 +43,6 @@ export async function middleware(request: NextRequest) {
       }
     );
 
-    // Check if we're in a preview deployment
-    const isPreview = process.env.VERCEL_ENV === 'preview';
-    
     // Get session with error handling
     const { data: { session }, error } = await supabase.auth.getSession();
     

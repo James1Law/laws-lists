@@ -57,11 +57,14 @@ export default function ShareGroup({ groupId, isOwner, groupName }: ShareGroupPr
 
       if (inviteError) throw inviteError;
 
-      // Construct the invite link
-      const inviteLink = `https://laws-lists.vercel.app/accept-invite?token=${token}`;
+      // Construct the invite link using the site URL
+      const siteUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
+        ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+        : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      const inviteLink = `${siteUrl}/accept-invite?token=${token}`;
 
       // Send the invite email
-      const response = await fetch('/functions/v1/send-invite-email', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-invite-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
