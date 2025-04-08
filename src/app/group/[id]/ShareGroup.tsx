@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getSiteUrl } from "@/lib/site-url";
 import {
   Dialog,
   DialogContent,
@@ -58,10 +59,7 @@ export default function ShareGroup({ groupId, isOwner, groupName }: ShareGroupPr
       if (inviteError) throw inviteError;
 
       // Construct the invite link using the site URL
-      const siteUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
-        ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-        : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-      const inviteLink = `${siteUrl}/accept-invite?token=${token}`;
+      const inviteLink = `${getSiteUrl()}/accept-invite?token=${token}`;
 
       // Send the invite email
       const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-invite-email`, {
