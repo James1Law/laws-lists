@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { createBrowserClient } from "@supabase/ssr";
+import { getSiteUrl } from "@/lib/site-url";
 
 export default function AuthPage() {
   const searchParams = useSearchParams();
@@ -51,11 +52,7 @@ export default function AuthPage() {
         email: signUpData.email,
         password: signUpData.password,
         options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_VERCEL_URL 
-            ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/auth/callback`
-            : process.env.NEXT_PUBLIC_SITE_URL 
-              ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-              : `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${getSiteUrl()}/auth/callback`,
           data: {
             name: signUpData.name,
           },
