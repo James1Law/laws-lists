@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // This middleware is now a placeholder for future functionality
 // We're removing all Supabase Auth-based protection
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function middleware(request: NextRequest) {
   // Allow all requests
   return NextResponse.next();

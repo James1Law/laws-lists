@@ -36,47 +36,6 @@ export default function GroupListsPage({ params }: { params: { id: string } }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Validate params and check authentication when component mounts
-  useEffect(() => {
-    const validateAndAuth = async () => {
-      setLoading(true);
-      try {
-        // Validate the group ID parameter
-        const result = ParamsSchema.safeParse({ id: params.id });
-        
-        if (!result.success) {
-          throw new Error("Invalid group ID format");
-        }
-        
-        // Check if authenticated for this group
-        const storedAuth = sessionStorage.getItem(`group_auth_${params.id}`);
-        if (storedAuth !== "true") {
-          // Redirect to password page if not authenticated
-          router.push(`/group/${params.id}`);
-          return;
-        }
-        
-        // Fetch group data
-        const groupData = await fetchGroup(params.id);
-        setGroup(groupData);
-        
-        // Fetch lists for this group
-        await fetchLists();
-      } catch (error: unknown) {
-        console.error("Error loading group or lists:", error);
-        if (error instanceof Error) {
-          setError(error.message);
-        } else {
-          setError("Failed to load group or lists");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    validateAndAuth();
-  }, [params.id, router]);
-
   // Fetch group data from database
   const fetchGroup = async (id: string) => {
     try {
@@ -117,6 +76,47 @@ export default function GroupListsPage({ params }: { params: { id: string } }) {
       }
     }
   }, [params.id]);
+
+  // Validate params and check authentication when component mounts
+  useEffect(() => {
+    const validateAndAuth = async () => {
+      setLoading(true);
+      try {
+        // Validate the group ID parameter
+        const result = ParamsSchema.safeParse({ id: params.id });
+        
+        if (!result.success) {
+          throw new Error("Invalid group ID format");
+        }
+        
+        // Check if authenticated for this group
+        const storedAuth = sessionStorage.getItem(`group_auth_${params.id}`);
+        if (storedAuth !== "true") {
+          // Redirect to password page if not authenticated
+          router.push(`/group/${params.id}`);
+          return;
+        }
+        
+        // Fetch group data
+        const groupData = await fetchGroup(params.id);
+        setGroup(groupData);
+        
+        // Fetch lists for this group
+        await fetchLists();
+      } catch (error: unknown) {
+        console.error("Error loading group or lists:", error);
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError("Failed to load group or lists");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    validateAndAuth();
+  }, [params.id, router, fetchLists]);
 
   // Create a new list
   const handleCreateList = async (e: React.FormEvent) => {
