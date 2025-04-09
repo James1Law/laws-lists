@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,8 +27,7 @@ const ParamsSchema = z.object({
 
 export default function GroupListsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [group, setGroup] = useState<{ id: string; name: string; password: string } | null>(null);
   const [lists, setLists] = useState<List[]>([]);
   const [showCreateList, setShowCreateList] = useState(false);
@@ -40,7 +39,7 @@ export default function GroupListsPage({ params }: { params: { id: string } }) {
   // Validate params and check authentication when component mounts
   useEffect(() => {
     const validateAndAuth = async () => {
-      setIsLoading(true);
+      setLoading(true);
       try {
         // Validate the group ID parameter
         const result = ParamsSchema.safeParse({ id: params.id });
@@ -57,8 +56,6 @@ export default function GroupListsPage({ params }: { params: { id: string } }) {
           return;
         }
         
-        setIsAuthenticated(true);
-        
         // Fetch group data
         const groupData = await fetchGroup(params.id);
         setGroup(groupData);
@@ -73,7 +70,7 @@ export default function GroupListsPage({ params }: { params: { id: string } }) {
           setError("Failed to load group or lists");
         }
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
     
@@ -103,7 +100,7 @@ export default function GroupListsPage({ params }: { params: { id: string } }) {
   };
 
   // Fetch lists for this group
-  const fetchLists = async () => {
+  const fetchLists = useCallback(async () => {
     try {
       const lists = await prisma.list.findMany({
         where: { groupId: params.id },
@@ -119,7 +116,7 @@ export default function GroupListsPage({ params }: { params: { id: string } }) {
         throw new Error("Failed to fetch lists");
       }
     }
-  };
+  }, [params.id]);
 
   // Create a new list
   const handleCreateList = async (e: React.FormEvent) => {
@@ -172,7 +169,6 @@ export default function GroupListsPage({ params }: { params: { id: string } }) {
   // Handle signing out
   const handleSignOut = () => {
     sessionStorage.removeItem(`group_auth_${params.id}`);
-    setIsAuthenticated(false);
     router.push(`/group/${params.id}`);
   };
 
@@ -182,7 +178,7 @@ export default function GroupListsPage({ params }: { params: { id: string } }) {
   };
 
   // Show loading state
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />

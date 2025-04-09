@@ -1,4 +1,4 @@
-import { createSupabaseClient, createServiceRoleClient } from '@/lib/supabase-client';
+import { createServiceRoleClient } from '@/lib/supabase-client';
 import { NextResponse } from 'next/server';
 
 // GET items for a specific list

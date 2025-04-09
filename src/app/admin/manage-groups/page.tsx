@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { createSupabaseClient } from "@/lib/supabase";
+import { createSupabaseClient } from "@/lib/supabase-client";
 
 interface Group {
   id: string;

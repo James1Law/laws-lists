@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,8 +35,8 @@ export default function GroupPage({ params }: { params: { id: string } }) {
   const [newListName, setNewListName] = useState("");
   const [isCreatingList, setIsCreatingList] = useState(false);
 
-  // Fetch group details
-  const fetchGroupDetails = async () => {
+  // Wrap the functions in useCallback to avoid dependency issues
+  const fetchGroupDetails = useCallback(async () => {
     try {
       const response = await fetch(`/api/groups/${params.id}`);
       if (!response.ok) {
@@ -48,10 +48,10 @@ export default function GroupPage({ params }: { params: { id: string } }) {
       console.error("Error fetching group:", error);
       toast.error("Failed to load group details");
     }
-  };
+  }, [params.id]);
 
   // Fetch lists for the group
-  const fetchLists = async () => {
+  const fetchLists = useCallback(async () => {
     try {
       const response = await fetch(`/api/groups/${params.id}/lists`);
       if (!response.ok) {
@@ -65,7 +65,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.id]);
 
   // Handle authentication
   const handleAuthenticate = async (e: React.FormEvent) => {
@@ -170,7 +170,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     } else {
       setIsLoading(false);
     }
-  }, [params.id]);
+  }, [params.id, fetchGroupDetails, fetchLists]);
 
   // Authentication screen
   if (!isAuthenticated) {

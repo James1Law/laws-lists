@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { createSupabaseClient } from "@/lib/supabase";
+import { createSupabaseClient } from "@/lib/supabase-client";
 
 export default function CreateGroupPage() {
   const router = useRouter();

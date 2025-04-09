@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -47,8 +47,8 @@ export default function ListPage() {
   const [newItemContent, setNewItemContent] = useState("");
   const [isCreatingItem, setIsCreatingItem] = useState(false);
 
-  // Fetch list details
-  const fetchListDetails = async () => {
+  // Wrap the functions in useCallback to avoid dependency issues
+  const fetchListDetails = useCallback(async () => {
     try {
       const response = await fetch(`/api/groups/${groupId}/lists/${listId}`);
       if (!response.ok) {
@@ -60,10 +60,10 @@ export default function ListPage() {
       console.error("Error fetching list:", error);
       toast.error("Failed to load list details");
     }
-  };
+  }, [groupId, listId]);
 
   // Fetch items for the list
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
       const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items`);
       if (!response.ok) {
@@ -77,7 +77,7 @@ export default function ListPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [groupId, listId]);
 
   // Create a new item
   const handleCreateItem = async (e: React.FormEvent) => {
@@ -196,7 +196,7 @@ export default function ListPage() {
     // Fetch list details and items
     fetchListDetails();
     fetchItems();
-  }, [groupId, listId, router]);
+  }, [groupId, listId, router, fetchListDetails, fetchItems]);
 
   if (isLoading) {
     return (
