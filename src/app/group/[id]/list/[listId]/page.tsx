@@ -5,13 +5,11 @@ import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { z } from "zod";
-import { prisma } from "@/lib/supabase";
 
 // Define types
 type ListDetails = {
@@ -28,12 +26,6 @@ type Item = {
   list_id: string;
   created_at: string;
 };
-
-// Validate URL parameters
-const ParamsSchema = z.object({
-  id: z.string().uuid("Invalid group ID format"),
-  listId: z.string().uuid("Invalid list ID format")
-});
 
 export default function ListPage() {
   const router = useRouter();
