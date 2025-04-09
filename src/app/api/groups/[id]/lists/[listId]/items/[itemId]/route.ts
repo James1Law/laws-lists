@@ -1,22 +1,29 @@
 import { createServiceRoleClient } from '@/lib/supabase-client';
 import { NextResponse } from 'next/server';
 
-// GET all groups
-export async function GET() {
+// PATCH to update an item (toggle bought status)
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string; listId: string; itemId: string } }
+) {
   try {
+    const { bought } = await request.json();
     // Use service role client to bypass RLS
     const supabase = createServiceRoleClient();
     
-    // Fetch all groups
+    // Update the item
     const { data, error } = await supabase
-      .from('groups')
-      .select('id, name, created_at')
-      .order('created_at', { ascending: false });
+      .from('items')
+      .update({ bought })
+      .eq('id', params.itemId)
+      .eq('list_id', params.listId)
+      .select()
+      .single();
     
     if (error) {
-      console.error('Error fetching groups:', error);
+      console.error('Error updating item:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch groups' },
+        { error: 'Failed to update item' },
         { status: 500 }
       );
     }
@@ -31,34 +38,31 @@ export async function GET() {
   }
 }
 
-// POST to create a new group
-export async function POST(request: Request) {
+// DELETE an item
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string; listId: string; itemId: string } }
+) {
   try {
-    const { name, password_hash } = await request.json();
     // Use service role client to bypass RLS
     const supabase = createServiceRoleClient();
     
-    // Insert into the Supabase groups table
-    const { data, error } = await supabase
-      .from('groups')
-      .insert([
-        {
-          name,
-          password_hash,
-        },
-      ])
-      .select()
-      .single();
+    // Delete the item
+    const { error } = await supabase
+      .from('items')
+      .delete()
+      .eq('id', params.itemId)
+      .eq('list_id', params.listId);
     
     if (error) {
-      console.error('Error creating group:', error);
+      console.error('Error deleting item:', error);
       return NextResponse.json(
-        { error: 'Failed to create group' },
+        { error: 'Failed to delete item' },
         { status: 500 }
       );
     }
     
-    return NextResponse.json(data);
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error in API route:', error);
     return NextResponse.json(

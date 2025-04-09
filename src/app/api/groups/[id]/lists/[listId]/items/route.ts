@@ -1,22 +1,26 @@
-import { createServiceRoleClient } from '@/lib/supabase-client';
+import { createSupabaseClient, createServiceRoleClient } from '@/lib/supabase-client';
 import { NextResponse } from 'next/server';
 
-// GET all groups
-export async function GET() {
+// GET items for a specific list
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string; listId: string } }
+) {
   try {
     // Use service role client to bypass RLS
     const supabase = createServiceRoleClient();
     
-    // Fetch all groups
+    // Fetch items for the list
     const { data, error } = await supabase
-      .from('groups')
-      .select('id, name, created_at')
+      .from('items')
+      .select('id, content, bought, list_id, created_at')
+      .eq('list_id', params.listId)
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Error fetching groups:', error);
+      console.error('Error fetching items:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch groups' },
+        { error: 'Failed to fetch items' },
         { status: 500 }
       );
     }
@@ -31,29 +35,33 @@ export async function GET() {
   }
 }
 
-// POST to create a new group
-export async function POST(request: Request) {
+// POST to create a new item for a list
+export async function POST(
+  request: Request,
+  { params }: { params: { id: string; listId: string } }
+) {
   try {
-    const { name, password_hash } = await request.json();
+    const { content } = await request.json();
     // Use service role client to bypass RLS
     const supabase = createServiceRoleClient();
     
-    // Insert into the Supabase groups table
+    // Create a new item
     const { data, error } = await supabase
-      .from('groups')
+      .from('items')
       .insert([
         {
-          name,
-          password_hash,
+          content,
+          bought: false,
+          list_id: params.listId,
         },
       ])
       .select()
       .single();
     
     if (error) {
-      console.error('Error creating group:', error);
+      console.error('Error creating item:', error);
       return NextResponse.json(
-        { error: 'Failed to create group' },
+        { error: 'Failed to create item' },
         { status: 500 }
       );
     }

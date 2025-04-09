@@ -5,28 +5,37 @@ alwaysApply: true
 ---
 
 # Your rule content
-Every file must compile without TypeScript or ESLint errors before pushing to main.
-Never push to main unless the branch builds successfully in a preview.
-Set up Husky and lint-staged so that TypeScript and ESLint checks run before each commit.
-Every page under /app must validate its params and searchParams types explicitly using inferred types or manual declarations.
-Ensure the page component uses correctly typed route parameters (params, searchParams) that match the latest Next.js standards.
-Search the entire project for unused imports or variables and remove them. Do not break any UI or functionality.
-Search the whole project and update all catch blocks to use (error: unknown) and safely check instance types.
-Regularly audit and upgrade outdated or deprecated packages, especially from Supabase and Next.js.
-All sensitive values (e.g., Supabase keys, URLs) must be stored in .env and referenced via process.env.
-Run this command locally before pushing: npm run build && npm run lint && tsc --noEmit You can wrap this into a script called check-before-push and add it as a Husky pre-push hook.
-This project uses Vercel exclusively for deployment.
+🔒 Access & Auth
+	•	Group access is protected with a simple password gate (handled in code).
+	•	Only the admin (you) can create new groups via an /admin route protected by a hardcoded password.
+	•	No Supabase Auth, Resend, or Edge Functions are used.
 
-❌ Do not:
-	•	Add .github/workflows files related to GitHub Pages (e.g. deploy.yml, gh-pages.yml)
+💻 Code Quality
+	•	Every file must compile without TypeScript or ESLint errors before merging to main.
+	•	All pages under /app must explicitly validate params and searchParams types using zod or inferred route types.
+	•	Every catch block must use (error: unknown) and safely handle error type checks.
+	•	Search and remove unused imports or variables regularly.
+	•	Run this before pushing:
+	npm run build && npm run lint && tsc --noEmit
+		•	You can wrap that in a script named check-before-push and connect it to a Husky pre-push hook.
+	🧹 Project Hygiene
+	•	No auth packages, Resend config, or Edge Function files should exist.
+	•	Use .env.local for local secrets only (e.g. ADMIN_PASSWORD, fallback URLs)
+	•	Use Vercel Dashboard for production environment variables.
+	•	If using Prisma:
+	•	Run npx prisma format and npx prisma generate after any schema change.
+	•	Seed scripts must run without errors before pushing.
+
+🚫 Do NOT:
+	•	Add .github/workflows for GitHub Pages
 	•	Use the gh-pages npm package
-	•	Add "deploy" scripts targeting the out/ folder
 	•	Add output: 'export' to next.config.js
+	•	Push to main unless the branch builds successfully in preview
 
-✅ Do:
-	•	Use SSR-friendly features supported by Vercel
-	•	Deploy via Vercel’s GitHub integration only
+✅ DO:
+	•	Use Next.js with Vercel SSR and file-based routing
+	•	Use Prisma + SQLite or Supabase (just as a database)
+	•	Use Shadcn UI for a clean interface
 	•	Keep main as the production branch
-	•	Use .env.local for local dev and Vercel dashboard for prod secrets
-- You can @ files here
-- You can use markdown but dont have to
+	•	Deploy only via Vercel’s GitHub integration
+

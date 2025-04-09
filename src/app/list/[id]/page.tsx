@@ -1,13 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { createSupabaseClient } from "@/lib/supabase";
+import { z } from "zod";
+import { prisma } from "@/lib/supabase";
+
+// Define schema for params
+const ParamsSchema = z.object({
+  id: z.string().uuid()
+});
 
 interface List {
   id: string;
@@ -18,117 +26,119 @@ interface List {
 
 interface Item {
   id: string;
-  list_id: string;
   text: string;
   bought_by: string | null;
-  created_at: string;
-}
-
-interface Group {
-  id: string;
-  name: string;
 }
 
 export default function ListPage({ params }: { params: { id: string } }) {
+  // Validate params
+  const validationResult = ParamsSchema.safeParse(params);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [list, setList] = useState<List | null>(null);
   const [items, setItems] = useState<Item[]>([]);
-  const [group, setGroup] = useState<Group | null>(null);
   const [newItemText, setNewItemText] = useState("");
+  const [adding, setAdding] = useState(false);
   const [yourName, setYourName] = useState("");
-  const [isCreatingItem, setIsCreatingItem] = useState(false);
-  const [isOwner, setIsOwner] = useState(false);
+  const [nameSet, setNameSet] = useState(false);
+  const [loadingItem, setLoadingItem] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchListAndItems();
-    
-    // Load saved name from localStorage
-    const savedName = localStorage.getItem("user_name");
-    if (savedName) {
-      setYourName(savedName);
-    }
-  }, [params.id]);
-
-  const fetchListAndItems = async () => {
-    setIsLoading(true);
+  const fetchList = useCallback(async () => {
     try {
-      const supabase = createSupabaseClient();
+      const list = await prisma.list.findUnique({
+        where: { id: params.id },
+        include: { group: true }
+      });
       
-      // Fetch list details
-      const { data: listData, error: listError } = await supabase
-        .from("lists")
-        .select("id, name, owner_name, group_id")
-        .eq("id", params.id)
-        .single();
-
-      if (listError) throw listError;
-      setList(listData);
-      
-      // Check if user is owner
-      const storedName = localStorage.getItem("user_name");
-      if (storedName && storedName === listData.owner_name) {
-        setIsOwner(true);
+      if (!list) {
+        throw new Error("List not found");
       }
       
-      // Fetch group info
-      const { data: groupData, error: groupError } = await supabase
-        .from("groups")
-        .select("id, name")
-        .eq("id", listData.group_id)
-        .single();
-        
-      if (groupError) throw groupError;
-      setGroup(groupData);
+      setList(list as unknown as List);
       
-      // Fetch items
-      const { data: itemsData, error: itemsError } = await supabase
-        .from("items")
-        .select("*")
-        .eq("list_id", params.id)
-        .order("created_at", { ascending: true });
-
-      if (itemsError) throw itemsError;
-      setItems(itemsData || []);
+      // Check group authentication
+      const storedAuth = sessionStorage.getItem(`group_${list.groupId}_auth`);
+      if (storedAuth !== "true") {
+        // Redirect to group page to authenticate
+        router.push(`/group/${list.groupId}`);
+        return;
+      }
       
-      // Check if user has access to the group
-      const hasAccess = sessionStorage.getItem(`group_${listData.group_id}_auth`);
-      if (hasAccess !== "true") {
-        toast.error("Please authenticate with the group first");
-        router.push(`/group/${listData.group_id}`);
+      // Check if name is stored
+      const storedName = sessionStorage.getItem(`list_${params.id}_name`);
+      if (storedName) {
+        setYourName(storedName);
+        setNameSet(true);
       }
     } catch (error: unknown) {
       console.error("Error fetching list:", error);
-      toast.error("List not found");
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("List not found");
+      }
       router.push("/");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.id, router]);
 
-  const handleCreateItem = async (e: React.FormEvent) => {
+  const fetchItems = useCallback(async () => {
+    if (!list) return;
+    
+    try {
+      const items = await prisma.item.findMany({
+        where: { listId: params.id },
+        orderBy: [
+          { boughtBy: 'asc' }, // null values first
+          { createdAt: 'desc' }
+        ]
+      });
+      
+      setItems(items as unknown as Item[]);
+    } catch (error: unknown) {
+      console.error("Error fetching items:", error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to load items");
+      }
+    }
+  }, [list, params.id]);
+
+  useEffect(() => {
+    // If invalid params, redirect to home
+    if (!validationResult.success) {
+      toast.error("Invalid list ID");
+      router.push("/");
+      return;
+    }
+    
+    fetchList();
+  }, [params.id, router, fetchList, validationResult.success]);
+
+  useEffect(() => {
+    if (list) {
+      fetchItems();
+    }
+  }, [list, fetchItems]);
+
+  const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemText.trim()) return;
     
-    setIsCreatingItem(true);
+    setAdding(true);
     try {
-      const supabase = createSupabaseClient();
+      await prisma.item.create({
+        data: {
+          text: newItemText,
+          listId: params.id
+        }
+      });
       
-      const { error } = await supabase
-        .from("items")
-        .insert([
-          {
-            list_id: params.id,
-            text: newItemText,
-            bought_by: null
-          },
-        ]);
-
-      if (error) throw error;
-
-      toast.success("Item added to list");
+      toast.success("Item added successfully");
       setNewItemText("");
-      fetchListAndItems(); // Refresh the list
+      fetchItems();
     } catch (error: unknown) {
       console.error("Error adding item:", error);
       if (error instanceof Error) {
@@ -137,90 +147,58 @@ export default function ListPage({ params }: { params: { id: string } }) {
         toast.error("Failed to add item");
       }
     } finally {
-      setIsCreatingItem(false);
+      setAdding(false);
     }
   };
 
-  const handleToggleBought = async (item: Item) => {
-    if (!yourName) {
-      toast.error("Please enter your name before marking items");
+  const handleSetName = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!yourName.trim()) return;
+    
+    // Store name in session storage
+    sessionStorage.setItem(`list_${params.id}_name`, yourName);
+    setNameSet(true);
+    toast.success("Name set successfully");
+  };
+
+  const handleToggleBought = async (itemId: string, currentBoughtBy: string | null) => {
+    if (list?.owner_name === yourName) {
+      toast.error("As the list owner, you cannot mark items as bought");
       return;
     }
     
-    // Save the name for future use
-    localStorage.setItem("user_name", yourName);
-    
-    // If owner of the list, prevent marking items
-    if (isOwner) {
-      toast.error("As the list creator, you cannot mark items as bought");
-      return;
-    }
-    
+    setLoadingItem(itemId);
     try {
-      const supabase = createSupabaseClient();
+      // If already bought by this user, mark as unbought
+      // If bought by someone else, don't allow changes
+      // If not bought, mark as bought by this user
+      let newBoughtBy = null;
       
-      // If already bought by this person, unbuy it
-      const newBoughtBy = item.bought_by === yourName ? null : yourName;
-      
-      // If bought by someone else, don't allow changing
-      if (item.bought_by && item.bought_by !== yourName) {
-        toast.error(`This item was already bought by ${item.bought_by}`);
+      if (currentBoughtBy === null) {
+        newBoughtBy = yourName;
+      } else if (currentBoughtBy === yourName) {
+        newBoughtBy = null;
+      } else {
+        toast.error(`This item was already bought by ${currentBoughtBy}`);
+        setLoadingItem(null);
         return;
       }
       
-      const { error } = await supabase
-        .from("items")
-        .update({ bought_by: newBoughtBy })
-        .eq("id", item.id);
-
-      if (error) throw error;
-
-      // Update local state
-      setItems(items.map(i => 
-        i.id === item.id ? { ...i, bought_by: newBoughtBy } : i
-      ));
+      await prisma.item.update({
+        where: { id: itemId },
+        data: { boughtBy: newBoughtBy }
+      });
       
-      if (newBoughtBy) {
-        toast.success("Item marked as bought");
-      } else {
-        toast.success("Item unmarked");
-      }
+      fetchItems();
     } catch (error: unknown) {
-      console.error("Error toggling item:", error);
+      console.error("Error updating item:", error);
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
         toast.error("Failed to update item");
       }
-    }
-  };
-
-  const handleDeleteItem = async (itemId: string) => {
-    // Only owners can delete items
-    if (!isOwner) return;
-    
-    if (!confirm("Are you sure you want to delete this item?")) return;
-    
-    try {
-      const supabase = createSupabaseClient();
-      
-      const { error } = await supabase
-        .from("items")
-        .delete()
-        .eq("id", itemId);
-
-      if (error) throw error;
-
-      toast.success("Item deleted");
-      // Update local state
-      setItems(items.filter(i => i.id !== itemId));
-    } catch (error: unknown) {
-      console.error("Error deleting item:", error);
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to delete item");
-      }
+    } finally {
+      setLoadingItem(null);
     }
   };
 
@@ -234,7 +212,7 @@ export default function ListPage({ params }: { params: { id: string } }) {
     );
   }
 
-  if (!list || !group) {
+  if (!list) {
     return (
       <div className="min-h-screen p-4 bg-gray-50">
         <div className="max-w-xl mx-auto text-center py-12">
@@ -247,161 +225,147 @@ export default function ListPage({ params }: { params: { id: string } }) {
     );
   }
 
-  return (
-    <div className="min-h-screen p-4 bg-gray-50">
-      <div className="max-w-xl mx-auto space-y-4">
-        <div className="flex items-center gap-4 mb-6">
-          <Link
-            href={`/group/${group.id}`}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold">{list.name}</h1>
-            <p className="text-gray-500">
-              Created by {list.owner_name} • {group.name}
+  const renderNameForm = () => (
+    <Card className="mb-4">
+      <CardContent className="p-4">
+        <form onSubmit={handleSetName} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="yourName">Your Name</Label>
+            <Input
+              id="yourName"
+              value={yourName}
+              onChange={(e) => setYourName(e.target.value)}
+              placeholder="Enter your name"
+              required
+            />
+            <p className="text-xs text-gray-500">
+              Your name will be shown when you mark items as bought
             </p>
           </div>
+          <Button
+            type="submit"
+          >
+            Set Name
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
+  const renderAddItemForm = () => (
+    <form onSubmit={handleAddItem} className="mb-6">
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <Input
+            value={newItemText}
+            onChange={(e) => setNewItemText(e.target.value)}
+            placeholder="Add a new item"
+            disabled={adding}
+            required
+          />
         </div>
+        <Button
+          type="submit"
+          disabled={adding}
+        >
+          {adding ? "Adding..." : "Add"}
+        </Button>
+      </div>
+    </form>
+  );
 
-        {/* Your name input for marking items */}
-        <Card className="mb-4">
-          <CardContent className="pt-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter your name"
-                value={yourName}
-                onChange={(e) => setYourName(e.target.value)}
-                className="flex-1"
-              />
-              <Button variant="outline" onClick={() => setYourName(localStorage.getItem("user_name") || "")}>
-                Reset
-              </Button>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {isOwner 
-                ? "As the list creator, you cannot mark items as bought" 
-                : "Your name is used when marking items as bought"}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Add new item */}
-        {!isOwner && (
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>Add Item to List</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreateItem} className="flex gap-2">
-                <Input
-                  placeholder="Enter item description"
-                  value={newItemText}
-                  onChange={(e) => setNewItemText(e.target.value)}
-                  className="flex-1"
-                  disabled={isCreatingItem}
-                />
-                <Button 
-                  type="submit" 
-                  disabled={isCreatingItem || !newItemText.trim()}
-                >
-                  Add
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Items list */}
-        <div className="space-y-2">
-          <h2 className="text-xl font-semibold">Items</h2>
+  const renderItems = () => (
+    <div className="space-y-2">
+      {items.length === 0 ? (
+        <div className="text-center p-6 border rounded-md">
+          <p className="text-gray-500">No items in this list yet</p>
+        </div>
+      ) : (
+        items.map((item) => {
+          const isBought = !!item.bought_by;
+          const boughtByYou = item.bought_by === yourName;
+          const isOwner = list.owner_name === yourName;
           
-          {items.length === 0 ? (
-            <div className="text-center p-6 border rounded-md">
-              <p className="text-gray-500">No items in this list yet</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {items.map((item) => (
-                <div 
-                  key={item.id} 
-                  className={`p-4 border rounded-md flex justify-between items-center ${
-                    item.bought_by ? 'bg-gray-50' : 'bg-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className={`w-5 h-5 rounded-full border flex items-center justify-center cursor-pointer ${
-                        item.bought_by ? 'bg-green-100 border-green-500 text-green-500' : 'border-gray-300'
-                      }`}
-                      onClick={() => handleToggleBought(item)}
+          // Owner shouldn't see who bought what
+          const displayBoughtBy = isOwner ? null : item.bought_by;
+          
+          return (
+            <Card key={item.id} className={`overflow-hidden ${isBought ? 'bg-gray-50' : ''}`}>
+              <CardContent className="p-3 flex items-center justify-between">
+                <div className="flex items-start gap-3 flex-1">
+                  {!isOwner && (
+                    <Checkbox
+                      checked={isBought}
+                      onCheckedChange={() => handleToggleBought(item.id, item.bought_by)}
+                      disabled={loadingItem === item.id || (isBought && !boughtByYou)}
+                      id={`item-${item.id}`}
+                      className="mt-0.5"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <label
+                      htmlFor={`item-${item.id}`}
+                      className={`text-base cursor-pointer ${isBought ? 'line-through text-gray-500' : ''}`}
                     >
-                      {item.bought_by && (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M20 6L9 17 4 12" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className={item.bought_by ? 'line-through text-gray-500' : ''}>
                       {item.text}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {isOwner ? (
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleDeleteItem(item.id)}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
-                        </svg>
-                      </Button>
-                    ) : (
-                      // Don't show who bought the item if you're the list owner
-                      item.bought_by && <span className="text-xs text-green-600">Bought by {item.bought_by}</span>
+                    </label>
+                    
+                    {displayBoughtBy && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {boughtByYou ? "Bought by you" : `Bought by ${displayBoughtBy}`}
+                      </p>
                     )}
                   </div>
                 </div>
-              ))}
+              </CardContent>
+            </Card>
+          );
+        })
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen p-4 bg-gray-50">
+      <div className="max-w-xl mx-auto space-y-4">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/group/${list.group_id}`}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <h1 className="text-2xl font-bold">{list.name}</h1>
+          </div>
+          
+          {nameSet && (
+            <div className="text-sm text-gray-500">
+              Signed in as {yourName}
             </div>
           )}
         </div>
+
+        {!nameSet ? (
+          renderNameForm()
+        ) : (
+          <>
+            {renderAddItemForm()}
+            {renderItems()}
+          </>
+        )}
       </div>
     </div>
   );
