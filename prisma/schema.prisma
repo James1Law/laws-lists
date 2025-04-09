@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Groups with password protection
+model Group {
+  id        String   @id @default(uuid())
+  name      String
+  password  String   // Storing password in plain text for simplicity
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relationships
+  lists     List[]
+
+  @@map("groups")
+}
+
+// Lists within a group
+model List {
+  id        String   @id @default(uuid())
+  name      String
+  ownerName String   @map("owner_name")
+  groupId   String   @map("group_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relationships
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  items     Item[]
+
+  @@map("lists")
+}
+
+// Items within a list
+model Item {
+  id        String    @id @default(uuid())
+  text      String
+  boughtBy  String?   @map("bought_by")
+  listId    String    @map("list_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  
+  // Relationships
+  list      List      @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@map("items")
+} 
