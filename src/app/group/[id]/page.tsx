@@ -476,10 +476,9 @@ export default function GroupPage({ params }: { params: { id: string } }) {
         {/* Lists section */}
         <div className="space-y-2">
           <h2 className="text-sm font-medium flex items-center gap-1.5">
-            Your Lists
             {isSavingOrder && <Loader2 className="h-3 w-3 animate-spin" />}
-            <span className="text-xs text-green-600 ml-2">
-              ✓ Drag & Drop enabled - use the <GripVertical className="inline h-3 w-3 mx-0.5" /> handle to reorder lists
+            <span className="text-xs text-green-600">
+              ✓ Use the <GripVertical className="inline h-3 w-3 mx-0.5" /> handle to reorder lists
             </span>
           </h2>
           
