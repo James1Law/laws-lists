@@ -50,13 +50,14 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
     transform,
     transition,
     isDragging
-  } = useSortable({ id: list.id });
+  } = useSortable({ 
+    id: list.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 10 : 1,
-    touchAction: 'none'
   };
 
   return (
@@ -68,32 +69,36 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
         isDragging && "opacity-70"
       )}
     >
-      <Card className="relative hover:bg-accent/5 transition-colors">
+      <Card className="relative hover:bg-accent/5 transition-colors border-muted overflow-hidden">
+        {/* Drag handle only - with more distinct styling */}
         <div
           {...attributes}
           {...listeners}
-          className="absolute top-3 left-2 cursor-grab active:cursor-grabbing p-1 rounded-md hover:bg-accent/10"
+          className="absolute top-1/2 left-1.5 -translate-y-1/2 cursor-grab active:cursor-grabbing p-1 h-6 w-6 rounded-md hover:bg-accent/10 flex items-center justify-center z-10"
           style={{ touchAction: 'none' }}
+          title="Drag to reorder"
         >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
-        <CardHeader className="pl-10 py-3">
-          <CardTitle className="text-base truncate">{list.title}</CardTitle>
-          <CardDescription className="text-xs">
-            {new Date(list.created_at).toLocaleDateString()}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pb-3 pt-0">
+        
+        {/* Main card content - more compact */}
+        <div className="flex items-center pl-8 pr-2 py-2.5">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-sm truncate">{list.title}</h3>
+            <p className="text-xs text-muted-foreground">
+              {new Date(list.created_at).toLocaleDateString()}
+            </p>
+          </div>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="w-full"
             onClick={onClick}
+            className="ml-2 h-7 px-2"
           >
-            <ChevronRight className="h-4 w-4 mr-1" />
-            View Items
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="sr-only">View Items</span>
           </Button>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );
@@ -112,13 +117,14 @@ export default function GroupPage({ params }: { params: { id: string } }) {
   const [isCreatingList, setIsCreatingList] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
 
-  // Set up dnd-kit sensors
+  // Set up dnd-kit sensors with stricter activation constraints
   const sensors = useSensors(
     useSensor(PointerSensor, {
+      // Only activate with more deliberate drag gestures
       activationConstraint: {
-        distance: 15,
+        distance: 10, // Require more movement to start drag
         tolerance: 5,
-        delay: 150,
+        delay: 250, // Longer delay to prevent accidental drags
       },
     }),
     useSensor(KeyboardSensor, {
@@ -461,7 +467,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
             Your Lists
             {isSavingOrder && <Loader2 className="h-3 w-3 animate-spin" />}
             <span className="text-xs text-green-600 ml-2">
-              ✓ Drag & Drop enabled - grab the handle on the left of each list
+              ✓ Drag & Drop enabled - use the <GripVertical className="inline h-3 w-3 mx-0.5" /> handle to reorder lists
             </span>
           </h2>
           
