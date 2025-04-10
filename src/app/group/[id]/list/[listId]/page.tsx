@@ -423,7 +423,7 @@ export default function ListPage() {
           variant="outline" 
           size="default" 
           onClick={() => router.push(`/group/${groupId}`)}
-          className="w-full sm:w-auto flex items-center justify-center gap-1 mb-2"
+          className="w-full sm:w-auto flex items-center justify-center gap-1 mb-2 bg-white border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors"
         >
           <ArrowLeft size={16} />
           <span>Back to Lists</span>
