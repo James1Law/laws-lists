@@ -418,18 +418,20 @@ export default function ListPage() {
   return (
     <div className="min-h-screen p-2 sm:p-4 bg-background">
       <div className="max-w-4xl mx-auto space-y-4">
-        {/* Compact Header */}
+        {/* Back button - more prominent and positioned above the header */}
+        <Button 
+          variant="outline" 
+          size="default" 
+          onClick={() => router.push(`/group/${groupId}`)}
+          className="w-full sm:w-auto flex items-center justify-center gap-1 mb-2"
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Lists</span>
+        </Button>
+        
+        {/* List Header */}
         <header className="flex justify-between items-center gap-2 border-b pb-2">
-          <div className="flex items-center gap-1 flex-1 min-w-0">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => router.push(`/group/${groupId}`)}
-              className="h-7 w-7 p-0"
-            >
-              <ArrowLeft size={16} />
-            </Button>
-            
+          <div className="flex-1 min-w-0">
             {isEditingTitle ? (
               <div className="flex items-center gap-1 flex-1">
                 <Input
