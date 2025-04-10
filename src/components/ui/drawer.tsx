@@ -6,7 +6,7 @@ import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const drawerVariants = cva(
-  "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-[10px] border bg-background transition-all duration-300 ease-in-out",
+  "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl border bg-background transition-all duration-300 ease-in-out shadow-lg overflow-hidden",
   {
     variants: {
       size: {
@@ -83,13 +83,8 @@ const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
           )}
           {...props}
         >
-          <div className="sticky top-0 z-20 flex w-full items-center justify-center border-b bg-background p-4">
-            <div className="absolute left-4">
-              <div
-                className="h-1 w-12 rounded-full bg-muted"
-                style={{ margin: "0 auto" }}
-              />
-            </div>
+          <div className="sticky top-0 z-20 flex w-full items-center justify-center border-b bg-background py-3">
+            <div className="h-1 w-10 rounded-full bg-muted/60" />
             <button
               onClick={onClose}
               className="absolute right-4 inline-flex h-8 w-8 items-center justify-center rounded-md border-none text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none"

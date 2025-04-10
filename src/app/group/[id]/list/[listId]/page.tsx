@@ -230,7 +230,15 @@ export default function ListPage() {
   // Toggle item bought status
   const toggleItemCompletion = async (itemId: string, currentState: boolean) => {
     try {
-      // Optimistically update UI
+      // First update the selectedItem if it's the one being toggled (for drawer UI)
+      if (selectedItem && selectedItem.id === itemId) {
+        setSelectedItem({
+          ...selectedItem,
+          bought: !currentState
+        });
+      }
+      
+      // Optimistically update UI for list items
       setItems(prevItems => 
         prevItems.map(item => 
           item.id === itemId ? { ...item, bought: !currentState } : item
@@ -246,14 +254,24 @@ export default function ListPage() {
       });
       
       if (!response.ok) {
-        // If error, revert the change
+        // If error, revert the change in both states
         setItems(prevItems => 
           prevItems.map(item => 
             item.id === itemId ? { ...item, bought: currentState } : item
           )
         );
+        
+        if (selectedItem && selectedItem.id === itemId) {
+          setSelectedItem({
+            ...selectedItem,
+            bought: currentState
+          });
+        }
+        
         throw new Error('Failed to update item');
       }
+      
+      toast.success(currentState ? 'Item marked as not bought' : 'Item marked as bought');
     } catch (error) {
       console.error("Error toggling item status:", error);
       toast.error("Failed to update item");
@@ -526,16 +544,21 @@ export default function ListPage() {
                   items.map(item => (
                     <div 
                       key={item.id} 
-                      className="flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-colors"
+                      className={`flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-colors ${item.bought ? 'bg-green-50/50' : ''}`}
                       onClick={() => openItemDrawer(item)}
                     >
-                      <div className="flex-1 min-w-0">
+                      <div className="flex items-center flex-1 min-w-0 gap-2">
                         <span 
                           className={`${item.bought ? "text-muted-foreground" : ""}`}
                           style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
                         >
                           {item.content}
                         </span>
+                        {item.bought && (
+                          <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0">
+                            Bought
+                          </span>
+                        )}
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground ml-2 shrink-0" />
                     </div>
