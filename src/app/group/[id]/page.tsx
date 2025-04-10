@@ -4,11 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, List, ArrowLeft, LogOut, Lock } from "lucide-react";
+import { Loader2, Plus, List, ArrowLeft, LogOut, Lock, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link";
 
 type GroupDetails = {
   id: string;
@@ -175,53 +174,53 @@ export default function GroupPage({ params }: { params: { id: string } }) {
   // Authentication screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen p-4 bg-background flex justify-center items-center">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="space-y-2">
-            <div className="flex items-center gap-2 mb-2">
+      <div className="min-h-screen p-2 sm:p-4 bg-background flex justify-center items-center">
+        <Card className="w-full max-w-sm shadow-sm">
+          <CardHeader className="space-y-1 p-3">
+            <div className="flex items-center gap-1 mb-1">
               <Button 
                 variant="ghost" 
-                size="icon" 
+                size="sm" 
                 onClick={() => router.push("/")}
-                className="h-8 w-8"
+                className="h-7 w-7 p-0"
               >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={16} />
               </Button>
-              <span className="text-sm text-muted-foreground">Back to Home</span>
+              <span className="text-xs text-muted-foreground">Back to Home</span>
             </div>
-            <CardTitle className="text-2xl font-bold">
+            <CardTitle className="text-xl font-bold">
               {group ? group.name : 'Loading group...'}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs">
               Enter the group password to access
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAuthenticate} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Group Password</Label>
+          <CardContent className="p-3 pt-0">
+            <form onSubmit={handleAuthenticate} className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="password" className="text-sm">Group Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Lock className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter group password"
-                    className="input-enhanced pl-10"
+                    placeholder="Enter password"
+                    className="pl-8 h-8 text-sm"
                     required
                   />
                 </div>
-                {authError && <p className="text-sm text-destructive">{authError}</p>}
+                {authError && <p className="text-xs text-destructive">{authError}</p>}
               </div>
               <Button
                 type="submit"
-                className="w-full btn-primary"
+                className="w-full h-8 text-sm"
                 disabled={isAuthenticating}
               >
                 {isAuthenticating ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                     Verifying...
                   </>
                 ) : (
@@ -236,70 +235,69 @@ export default function GroupPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="min-h-screen p-4 bg-background">
-      <div className="max-w-6xl mx-auto space-y-8 py-4">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
-          <div className="flex items-center gap-2">
+    <div className="min-h-screen p-2 sm:p-4 bg-background">
+      <div className="max-w-4xl mx-auto space-y-4">
+        <header className="flex justify-between items-center gap-2 border-b pb-2">
+          <div className="flex items-center gap-1">
             <Button 
               variant="ghost" 
-              size="icon" 
-              onClick={() => router.push("/admin")}
-              className="h-8 w-8"
+              size="sm"
+              onClick={() => router.push("/")}
+              className="h-7 w-7 p-0"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={16} />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">{group?.name}</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="text-xl font-bold truncate">{group?.name || 'Loading group...'}</h1>
+              <p className="text-xs text-muted-foreground">
                 Manage your lists and gift items
               </p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleLogout}
-            className="flex items-center gap-1"
+            className="h-7 px-2"
           >
-            <LogOut size={14} />
-            Log out
+            <LogOut size={14} className="mr-1" />
+            <span className="text-xs">Log out</span>
           </Button>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Create List Form */}
-          <Card className="shadow-md md:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Plus size={18} className="text-primary" />
+        <div className="grid grid-cols-1 gap-3">
+          {/* Compact Create List Form */}
+          <Card className="shadow-sm">
+            <CardHeader className="p-3 pb-0">
+              <CardTitle className="text-base flex items-center gap-1">
+                <Plus size={16} className="text-primary" />
                 Create New List
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreateList} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="listName">List Name</Label>
+            <CardContent className="p-3 pt-2">
+              <form onSubmit={handleCreateList} className="flex gap-2">
+                <div className="flex-1">
                   <Input
-                    id="listName"
                     value={newListName}
                     onChange={(e) => setNewListName(e.target.value)}
                     placeholder="e.g. Christmas 2025"
-                    className="input-enhanced"
+                    className="h-9 text-sm"
                     required
                   />
                 </div>
                 <Button
                   type="submit"
-                  className="w-full btn-primary"
+                  size="sm"
                   disabled={isCreatingList}
+                  className="whitespace-nowrap h-9"
                 >
                   {isCreatingList ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      <span className="hidden sm:inline">Creating...</span>
                     </>
                   ) : (
-                    "Create List"
+                    'Create'
                   )}
                 </Button>
               </form>
@@ -307,52 +305,56 @@ export default function GroupPage({ params }: { params: { id: string } }) {
           </Card>
 
           {/* Lists */}
-          <div className="md:col-span-2">
-            <Card className="shadow-md">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <List size={18} className="text-primary" />
+          <Card className="shadow-sm">
+            <CardHeader className="p-3 pb-0">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-base flex items-center gap-1">
+                  <List size={16} className="text-primary" />
                   Your Lists
                 </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : lists.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No lists created yet. Create your first list!
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {lists.map((list) => (
-                      <Link key={list.id} href={`/group/${params.id}/list/${list.id}`}>
-                        <Card className="cursor-pointer hover:border-primary/50 transition-colors">
-                          <CardContent className="p-4">
-                            <h3 className="font-medium text-lg">{list.title}</h3>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Created: {new Date(list.created_at).toLocaleDateString()}
-                            </p>
-                          </CardContent>
-                          <CardFooter className="pt-0 pb-4 px-4">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-primary px-0 h-auto font-normal text-sm"
-                            >
-                              View List
-                              <ArrowLeft size={14} className="ml-1 rotate-180" />
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={fetchLists}
+                  className="h-7 px-2"
+                >
+                  <span className="text-xs">Refresh</span>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-3 pt-2">
+              {isLoading ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : lists.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-sm text-muted-foreground">No lists created yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Create your first list above</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {lists.map((list) => (
+                    <div
+                      key={list.id}
+                      className="border rounded-md p-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => router.push(`/group/${params.id}/list/${list.id}`)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="min-w-0">
+                          <h3 className="font-medium text-sm truncate">{list.title}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            Created: {new Date(list.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

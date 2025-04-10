@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, Plus, Trash2, Edit, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -284,72 +283,70 @@ export default function ListPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen p-4 bg-background flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen p-2 bg-background flex justify-center items-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 bg-background">
-      <div className="max-w-4xl mx-auto space-y-8 py-4">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
-          <div className="flex items-center gap-2">
+    <div className="min-h-screen p-2 sm:p-4 bg-background">
+      <div className="max-w-4xl mx-auto space-y-4">
+        {/* Compact Header */}
+        <header className="flex justify-between items-center gap-2 border-b pb-2">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
             <Button 
               variant="ghost" 
-              size="icon" 
+              size="sm" 
               onClick={() => router.push(`/group/${groupId}`)}
-              className="h-8 w-8"
+              className="h-7 w-7 p-0"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={16} />
             </Button>
             
             {isEditingTitle ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 flex-1">
                 <Input
                   value={newListTitle}
                   onChange={(e) => setNewListTitle(e.target.value)}
-                  className="h-9 text-lg font-semibold min-w-[200px]"
+                  className="h-8 text-base font-semibold"
                   placeholder="List name"
                   autoFocus
                 />
                 <Button 
                   variant="ghost" 
-                  size="icon"
+                  size="sm"
                   onClick={handleUpdateTitle}
                   disabled={isUpdatingTitle}
-                  className="h-8 w-8 text-green-600"
+                  className="h-7 w-7 p-1 text-green-600"
                 >
-                  {isUpdatingTitle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
+                  {isUpdatingTitle ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save size={14} />}
                 </Button>
                 <Button 
                   variant="ghost" 
-                  size="icon"
+                  size="sm"
                   onClick={() => {
                     setIsEditingTitle(false);
                     setNewListTitle(list?.title || "");
                   }}
-                  className="h-8 w-8 text-red-600"
+                  className="h-7 w-7 p-1 text-red-600"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </Button>
               </div>
             ) : (
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">{list?.title || 'Loading list...'}</h1>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1">
+                  <h1 className="text-xl font-bold truncate">{list?.title || 'Loading list...'}</h1>
                   <Button 
                     variant="ghost" 
-                    size="icon"
+                    size="sm"
                     onClick={() => setIsEditingTitle(true)}
-                    className="h-8 w-8 text-gray-500 hover:text-gray-700"
+                    className="h-7 w-7 p-1 text-gray-500"
                   >
-                    <Edit size={14} />
+                    <Edit size={12} />
                   </Button>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Manage items in this list
-                </p>
               </div>
             )}
           </div>
@@ -358,88 +355,90 @@ export default function ListPage() {
             variant="destructive" 
             size="sm"
             onClick={() => setShowDeleteDialog(true)}
-            className="h-9"
+            className="h-7 shrink-0"
           >
-            <Trash2 size={16} className="mr-2" />
-            Delete List
+            <Trash2 size={14} className="mr-1" />
+            <span className="hidden sm:inline">Delete</span>
           </Button>
         </header>
 
-        <div className="grid grid-cols-1 gap-6">
-          {/* Create Item Form */}
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Plus size={18} className="text-primary" />
-                Add New Item
+        <div className="grid grid-cols-1 gap-3">
+          {/* Compact Create Item Form */}
+          <Card className="shadow-sm">
+            <CardHeader className="p-3 pb-0">
+              <CardTitle className="text-base flex items-center gap-1">
+                <Plus size={16} className="text-primary" />
+                Add Item
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreateItem} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="itemContent">Item Description</Label>
+            <CardContent className="p-3 pt-2">
+              <form onSubmit={handleCreateItem} className="flex gap-2">
+                <div className="flex-1">
                   <Input
                     id="itemContent"
                     value={newItemContent}
                     onChange={(e) => setNewItemContent(e.target.value)}
                     placeholder="e.g. New headphones"
-                    className="input-enhanced"
+                    className="h-9"
                     required
                   />
                 </div>
                 <Button
                   type="submit"
-                  className="w-full btn-primary"
+                  size="sm"
                   disabled={isCreatingItem}
+                  className="whitespace-nowrap h-9"
                 >
                   {isCreatingItem ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Adding...
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      <span className="hidden sm:inline">Adding...</span>
                     </>
                   ) : (
-                    "Add Item"
+                    <>Add</>
                   )}
                 </Button>
               </form>
             </CardContent>
           </Card>
 
-          {/* Items List */}
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle className="text-lg">Items in this List</CardTitle>
-              <CardDescription>
-                {items.length === 0 ? "No items yet" : `${items.length} item${items.length === 1 ? '' : 's'}`}
-              </CardDescription>
+          {/* Compact Items List */}
+          <Card className="shadow-sm">
+            <CardHeader className="p-3 pb-0">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-base">Items</CardTitle>
+                <CardDescription className="text-xs mt-0">
+                  {items.length === 0 ? "No items yet" : `${items.length} item${items.length === 1 ? '' : 's'}`}
+                </CardDescription>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+            <CardContent className="p-3 pt-2">
+              <div className="space-y-1">
                 {items.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-6">No items in this list yet. Add your first item above!</p>
+                  <p className="text-center text-muted-foreground py-3 text-sm">No items yet</p>
                 ) : (
                   items.map(item => (
                     <div 
                       key={item.id} 
-                      className="flex items-center justify-between p-3 rounded-md border"
+                      className="flex items-center justify-between p-2 rounded-md border text-sm"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
                         <Checkbox 
                           checked={item.bought} 
                           onCheckedChange={() => toggleItemCompletion(item.id, item.bought)}
-                          className="h-5 w-5"
+                          className="h-4 w-4 shrink-0"
                         />
-                        <span className={item.bought ? "line-through text-muted-foreground" : ""}>
+                        <span className={`truncate ${item.bought ? "line-through text-muted-foreground" : ""}`}>
                           {item.content}
                         </span>
                       </div>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={() => deleteItem(item.id)}
-                        className="h-8 w-8 text-red-600"
+                        className="h-6 w-6 p-0 ml-2 text-red-600 shrink-0"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </Button>
                     </div>
                   ))
@@ -452,27 +451,27 @@ export default function ListPage() {
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this list?</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg p-4">
+          <AlertDialogHeader className="space-y-1">
+            <AlertDialogTitle className="text-base">Delete list?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
               This will permanently delete the list &quot;{list?.title}&quot; and all items within it. 
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="mt-2">
+            <AlertDialogCancel disabled={isDeleting} className="h-8 text-xs">Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={(e) => {
                 e.preventDefault();
                 handleDeleteList();
               }}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 h-8 text-xs"
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                   Deleting...
                 </>
               ) : (
