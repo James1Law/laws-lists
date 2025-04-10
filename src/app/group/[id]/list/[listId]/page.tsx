@@ -6,8 +6,7 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, ArrowLeft, Plus, Trash2, Edit, Save, X } from "lucide-react";
+import { Loader2, ArrowLeft, Plus, Trash2, Edit, Save, X, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -19,6 +18,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Drawer,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { format } from "date-fns";
 
 // Define types
 type ListDetails = {
@@ -36,14 +43,11 @@ type Item = {
   created_at: string;
 };
 
-// Helper function to check if a string is a valid URL
-const isValidUrl = (text: string): boolean => {
-  try {
-    new URL(text);
-    return true;
-  } catch {
-    return false;
-  }
+// Add comment type
+type Comment = {
+  id: string;
+  content: string;
+  created_at: string;
 };
 
 export default function ListPage() {
@@ -66,6 +70,14 @@ export default function ListPage() {
   // For list deletion
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // For drawer and comments
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [isAddingComment, setIsAddingComment] = useState(false);
 
   // Wrap the functions in useCallback to avoid dependency issues
   const fetchListDetails = useCallback(async () => {
@@ -276,6 +288,92 @@ export default function ListPage() {
     }
   };
 
+  // Fetch comments for an item
+  const fetchComments = useCallback(async (itemId: string) => {
+    setIsLoadingComments(true);
+    try {
+      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${itemId}/comments`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch comments');
+      }
+      const data = await response.json();
+      setComments(data);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      toast.error("Failed to load comments");
+    } finally {
+      setIsLoadingComments(false);
+    }
+  }, [groupId, listId]);
+
+  // Add a comment
+  const addComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedItem) return;
+    if (!newComment.trim()) {
+      toast.error("Please enter a comment");
+      return;
+    }
+    
+    setIsAddingComment(true);
+    
+    try {
+      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${selectedItem.id}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: newComment }),
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to add comment');
+      }
+      
+      const newCommentData = await response.json();
+      
+      // Add to local state
+      setComments(prevComments => [newCommentData, ...prevComments]);
+      setNewComment("");
+      
+      toast.success("Comment added");
+    } catch (error: unknown) {
+      console.error("Error adding comment:", error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to add comment");
+      }
+    } finally {
+      setIsAddingComment(false);
+    }
+  };
+
+  // Open drawer with item details
+  const openItemDrawer = (item: Item) => {
+    setSelectedItem(item);
+    fetchComments(item.id);
+    setIsDrawerOpen(true);
+  };
+  
+  // Close drawer
+  const closeDrawer = () => {
+    setIsDrawerOpen(false);
+    setSelectedItem(null);
+    setComments([]);
+    setNewComment("");
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'PPP p'); // e.g., "Apr 29, 2023 12:34 PM"
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   useEffect(() => {
     // Check authentication status
     const auth = sessionStorage.getItem(`group_auth_${groupId}`);
@@ -410,7 +508,7 @@ export default function ListPage() {
             </CardContent>
           </Card>
 
-          {/* Compact Items List */}
+          {/* Compact Items List - Updated to use simpler card & arrow */}
           <Card className="shadow-sm">
             <CardHeader className="p-3 pb-0">
               <div className="flex justify-between items-center">
@@ -428,47 +526,18 @@ export default function ListPage() {
                   items.map(item => (
                     <div 
                       key={item.id} 
-                      className="flex items-start justify-between p-2 rounded-md border text-sm"
+                      className="flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-colors"
+                      onClick={() => openItemDrawer(item)}
                     >
-                      <div className="flex items-start gap-2 flex-1 min-w-0">
-                        <Checkbox 
-                          checked={item.bought} 
-                          onCheckedChange={() => toggleItemCompletion(item.id, item.bought)}
-                          className="h-4 w-4 shrink-0 mt-0.5"
-                        />
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          {isValidUrl(item.content) ? (
-                            <a 
-                              href={item.content}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`text-blue-600 hover:underline break-words ${item.bought ? "line-through opacity-70" : ""}`}
-                              onClick={(e) => e.stopPropagation()}
-                              style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
-                            >
-                              {item.content}
-                            </a>
-                          ) : (
-                            <span className={`break-words ${item.bought ? "line-through text-muted-foreground" : ""}`}
-                              style={{ wordWrap: "break-word", overflowWrap: "break-word" }}>
-                              {item.content}
-                            </span>
-                          )}
-                          {item.bought && (
-                            <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0">
-                              Bought
-                            </span>
-                          )}
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <span 
+                          className={`${item.bought ? "text-muted-foreground" : ""}`}
+                          style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
+                        >
+                          {item.content}
+                        </span>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteItem(item.id)}
-                        className="h-6 w-6 p-0 ml-2 text-red-600 shrink-0"
-                      >
-                        <Trash2 size={14} />
-                      </Button>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground ml-2 shrink-0" />
                     </div>
                   ))
                 )}
@@ -510,6 +579,105 @@ export default function ListPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Item Drawer */}
+      <Drawer 
+        open={isDrawerOpen} 
+        onClose={closeDrawer}
+        className="p-0"
+      >
+        {selectedItem && (
+          <>
+            <DrawerHeader className="px-4 pt-2">
+              <DrawerTitle className="text-xl overflow-hidden break-words">
+                {selectedItem.content}
+              </DrawerTitle>
+              <div className="flex items-center justify-between">
+                {/* Toggle for bought status */}
+                <div className="flex items-center space-x-2 mt-2">
+                  <Switch 
+                    id="bought-status" 
+                    checked={selectedItem.bought}
+                    onCheckedChange={() => toggleItemCompletion(selectedItem.id, selectedItem.bought)}
+                  />
+                  <Label htmlFor="bought-status" className="text-sm font-medium">
+                    {selectedItem.bought ? "Marked as bought" : "Mark as bought"}
+                  </Label>
+                </div>
+                
+                {/* Delete button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeDrawer();
+                    deleteItem(selectedItem.id);
+                  }}
+                  className="h-8 w-8 p-0 text-red-600 shrink-0"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            </DrawerHeader>
+            
+            <div className="flex-1 px-4 pb-4">
+              <div className="mb-4">
+                <h3 className="text-sm font-medium mb-2">Comments</h3>
+                
+                {/* Add comment form */}
+                <form onSubmit={addComment} className="flex gap-2 mb-4">
+                  <div className="flex-1">
+                    <Input
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add a comment..."
+                      className="h-9"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isAddingComment}
+                    className="whitespace-nowrap h-9"
+                  >
+                    {isAddingComment ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Add"
+                    )}
+                  </Button>
+                </form>
+                
+                {/* Comments list */}
+                <div className="space-y-3">
+                  {isLoadingComments ? (
+                    <div className="flex justify-center p-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : comments.length === 0 ? (
+                    <p className="text-center text-muted-foreground text-sm py-4">
+                      No comments yet
+                    </p>
+                  ) : (
+                    comments.map(comment => (
+                      <div 
+                        key={comment.id} 
+                        className="p-3 rounded-md border text-sm"
+                      >
+                        <p className="break-words">{comment.content}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(comment.created_at)}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </Drawer>
     </div>
   );
 } 
