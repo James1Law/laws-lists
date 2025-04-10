@@ -215,60 +215,6 @@ export default function AdminPage() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Create Group Card */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus size={18} className="text-primary" />
-                Create New Group
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreateGroup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="groupName">Group Name</Label>
-                  <Input
-                    id="groupName"
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)}
-                    placeholder="Enter group name"
-                    className="input-enhanced"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="groupPassword">Group Password</Label>
-                  <Input
-                    id="groupPassword"
-                    type="password"
-                    value={groupPassword}
-                    onChange={(e) => setGroupPassword(e.target.value)}
-                    placeholder="Enter group password"
-                    className="input-enhanced"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    This password will be used by members to access the group
-                  </p>
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full btn-primary"
-                  disabled={isCreating}
-                >
-                  {isCreating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Group"
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
           {/* Existing Groups Card */}
           <Card className="shadow-lg">
             <CardHeader>
@@ -323,6 +269,60 @@ export default function AdminPage() {
                   "Refresh Groups"
                 )}
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Create Group Card */}
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus size={18} className="text-primary" />
+                Create New Group
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateGroup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="groupName">Group Name</Label>
+                  <Input
+                    id="groupName"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="Enter group name"
+                    className="input-enhanced"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="groupPassword">Group Password</Label>
+                  <Input
+                    id="groupPassword"
+                    type="password"
+                    value={groupPassword}
+                    onChange={(e) => setGroupPassword(e.target.value)}
+                    placeholder="Enter group password"
+                    className="input-enhanced"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This password will be used by members to access the group
+                  </p>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full btn-primary"
+                  disabled={isCreating}
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Group"
+                  )}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </div>
