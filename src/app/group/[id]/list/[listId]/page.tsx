@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, Plus, Trash2, Edit, Save, X } from "lucide-react";
@@ -456,7 +456,7 @@ export default function ListPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to delete this list?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the list "{list?.title}" and all items within it. 
+              This will permanently delete the list &quot;{list?.title}&quot; and all items within it. 
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
