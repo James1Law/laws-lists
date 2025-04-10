@@ -36,6 +36,16 @@ type Item = {
   created_at: string;
 };
 
+// Helper function to check if a string is a valid URL
+const isValidUrl = (text: string): boolean => {
+  try {
+    new URL(text);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export default function ListPage() {
   const router = useRouter();
   const params = useParams();
@@ -425,9 +435,21 @@ export default function ListPage() {
                           onCheckedChange={() => toggleItemCompletion(item.id, item.bought)}
                           className="h-4 w-4 shrink-0"
                         />
-                        <span className={`truncate ${item.bought ? "line-through text-muted-foreground" : ""}`}>
-                          {item.content}
-                        </span>
+                        {isValidUrl(item.content) ? (
+                          <a 
+                            href={item.content}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`text-blue-600 hover:underline truncate ${item.bought ? "line-through opacity-70" : ""}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {item.content}
+                          </a>
+                        ) : (
+                          <span className={`truncate ${item.bought ? "line-through text-muted-foreground" : ""}`}>
+                            {item.content}
+                          </span>
+                        )}
                       </div>
                       <Button
                         variant="ghost"
