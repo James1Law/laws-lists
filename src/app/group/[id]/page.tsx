@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, List, ArrowLeft, LogOut, Lock, ChevronRight, GripVertical } from "lucide-react";
+import { Loader2, Plus, List, ArrowLeft, LogOut, Lock, ChevronRight, GripVertical, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -39,6 +39,8 @@ type List = {
   created_at: string;
   group_id: string;
   position: number | null;
+  totalItems?: number;
+  boughtItems?: number;
 };
 
 // Sortable list item component
@@ -59,6 +61,10 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
     transition,
     zIndex: isDragging ? 10 : 1,
   };
+
+  // Calculate totals with fallbacks for older data that might not have the counts
+  const totalItems = list.totalItems ?? 0;
+  const boughtItems = list.boughtItems ?? 0;
 
   return (
     <div
@@ -81,16 +87,24 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
           <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
         
-        {/* Simplified card content - no created_at date */}
+        {/* Simplified card content with progress counter */}
         <div 
-          className="flex items-center pl-8 pr-2 py-2 cursor-pointer" 
+          className="flex flex-col pl-8 pr-2 py-2 cursor-pointer" 
           onClick={onClick}
         >
-          <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between w-full">
             <h3 className="font-medium text-sm truncate">{list.title}</h3>
+            <div className="ml-2 text-muted-foreground">
+              <ChevronRight className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="ml-2 text-muted-foreground">
-            <ChevronRight className="h-3.5 w-3.5" />
+          
+          {/* Progress counter */}
+          <div className="text-xs text-muted-foreground mt-0.5 flex items-center justify-end">
+            <span>{boughtItems} / {totalItems} bought</span>
+            <span className="text-green-500 ml-1 inline-flex items-center">
+              <Check className="h-3 w-3" />
+            </span>
           </div>
         </div>
       </Card>

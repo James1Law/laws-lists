@@ -25,9 +25,42 @@ export async function GET(
       );
     }
     
+    // Fetch item counts for each list
+    const listsWithCounts = await Promise.all(
+      data.map(async (list) => {
+        // Get total items count
+        const { count: totalItems, error: totalError } = await supabase
+          .from('items')
+          .select('*', { count: 'exact', head: true })
+          .eq('list_id', list.id);
+        
+        // Get bought items count
+        const { count: boughtItems, error: boughtError } = await supabase
+          .from('items')
+          .select('*', { count: 'exact', head: true })
+          .eq('list_id', list.id)
+          .eq('bought', true);
+        
+        if (totalError || boughtError) {
+          console.error('Error fetching item counts:', totalError || boughtError);
+          return {
+            ...list,
+            totalItems: 0,
+            boughtItems: 0
+          };
+        }
+        
+        return {
+          ...list,
+          totalItems: totalItems || 0,
+          boughtItems: boughtItems || 0
+        };
+      })
+    );
+    
     // Sort manually to ensure nulls are last
     // And position is the primary sort key with created_at as secondary
-    const sortedData = data.sort((a, b) => {
+    const sortedData = listsWithCounts.sort((a, b) => {
       // If both have position values, sort by position
       if (a.position !== null && b.position !== null) {
         return a.position - b.position;
