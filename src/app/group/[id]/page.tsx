@@ -6,8 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, List, ArrowLeft, LogOut, Lock, ChevronRight } from "lucide-react";
+import { Loader2, Plus, List, ArrowLeft, LogOut, Lock, ChevronRight, GripVertical } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@/lib/utils";
 
 type GroupDetails = {
   id: string;
@@ -20,7 +38,66 @@ type List = {
   title: string;
   created_at: string;
   group_id: string;
+  position: number | null;
 };
+
+// Sortable list item component
+function SortableListItem({ list, onClick }: { list: List, onClick: () => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: list.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    touchAction: 'none'
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "transition-colors",
+        isDragging && "opacity-70"
+      )}
+    >
+      <Card className="relative hover:bg-accent/5 transition-colors">
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-3 left-2 cursor-grab active:cursor-grabbing p-1 rounded-md hover:bg-accent/10"
+          style={{ touchAction: 'none' }}
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <CardHeader className="pl-10 py-3">
+          <CardTitle className="text-base truncate">{list.title}</CardTitle>
+          <CardDescription className="text-xs">
+            {new Date(list.created_at).toLocaleDateString()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pb-3 pt-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={onClick}
+          >
+            <ChevronRight className="h-4 w-4 mr-1" />
+            View Items
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function GroupPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -33,6 +110,21 @@ export default function GroupPage({ params }: { params: { id: string } }) {
   const [authError, setAuthError] = useState("");
   const [newListName, setNewListName] = useState("");
   const [isCreatingList, setIsCreatingList] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  // Set up dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 15,
+        tolerance: 5,
+        delay: 150,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Wrap the functions in useCallback to avoid dependency issues
   const fetchGroupDetails = useCallback(async () => {
@@ -65,6 +157,62 @@ export default function GroupPage({ params }: { params: { id: string } }) {
       setIsLoading(false);
     }
   }, [params.id]);
+
+  // Handle drag end event for reordering
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+    
+    // Optimistically update the UI
+    setLists((items) => {
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
+      
+      if (oldIndex === -1 || newIndex === -1) return items;
+      
+      // Create a new array with the item moved to the new position
+      const newItems = arrayMove(items, oldIndex, newIndex);
+      
+      // Update positions based on new order
+      return newItems.map((item, index) => ({
+        ...item,
+        position: index,
+      }));
+    });
+
+    // Save the new order to the database
+    setIsSavingOrder(true);
+    try {
+      const listsWithPositions = lists.map((list, index) => ({
+        id: list.id,
+        position: index,
+      }));
+
+      const response = await fetch(`/api/groups/${params.id}/lists`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lists: listsWithPositions,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update list order');
+      }
+      
+      toast.success("List order updated");
+    } catch (error) {
+      console.error("Error updating list order:", error);
+      toast.error("Failed to save list order");
+      // If there's an error, refresh the lists from the server
+      fetchLists();
+    } finally {
+      setIsSavingOrder(false);
+    }
+  }, [lists, params.id, fetchLists]);
 
   // Handle authentication
   const handleAuthenticate = async (e: React.FormEvent) => {
@@ -154,6 +302,11 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     sessionStorage.removeItem(`group_auth_${params.id}`);
     setIsAuthenticated(false);
     toast.info("Logged out from group");
+  };
+
+  // Navigate to a list
+  const navigateToList = (listId: string) => {
+    router.push(`/group/${params.id}/list/${listId}`);
   };
 
   useEffect(() => {
@@ -248,9 +401,11 @@ export default function GroupPage({ params }: { params: { id: string } }) {
               <ArrowLeft size={16} />
             </Button>
             <div>
-              <h1 className="text-xl font-bold truncate">{group?.name || 'Loading group...'}</h1>
+              <h1 className="text-lg font-bold line-clamp-1">
+                {group?.name || 'Loading...'}
+              </h1>
               <p className="text-xs text-muted-foreground">
-                Manage your lists and gift items
+                Manage your lists
               </p>
             </div>
           </div>
@@ -258,104 +413,90 @@ export default function GroupPage({ params }: { params: { id: string } }) {
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className="h-7 px-2"
+            className="h-8 text-xs"
           >
-            <LogOut size={14} className="mr-1" />
-            <span className="text-xs">Log out</span>
+            <LogOut className="h-3 w-3 mr-1" />
+            Logout
           </Button>
         </header>
-
-        <div className="grid grid-cols-1 gap-3">
-          {/* Create List Form - More Compact */}
-          <Card className="shadow-sm">
-            <CardContent className="p-2">
-              <form onSubmit={handleCreateList} className="flex flex-col sm:flex-row gap-1.5">
-                <div className="flex-1">
-                  <div className="flex items-center mb-1 sm:hidden">
-                    <Plus size={14} className="text-primary mr-1" />
-                    <span className="text-sm font-medium">Create New List</span>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      value={newListName}
-                      onChange={(e) => setNewListName(e.target.value)}
-                      placeholder="e.g. Christmas 2025"
-                      className="h-8 text-sm pl-7 sm:pl-2"
-                      required
-                    />
-                    <Plus size={14} className="absolute left-2 top-2 text-muted-foreground sm:hidden" />
-                  </div>
-                </div>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={isCreatingList}
-                  className="whitespace-nowrap h-8"
-                >
-                  {isCreatingList ? (
-                    <>
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      <span className="hidden sm:inline">Creating...</span>
-                    </>
-                  ) : (
-                    'Create'
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Lists */}
-          <Card className="shadow-sm">
-            <CardHeader className="p-3 pb-0">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-base flex items-center gap-1">
-                  <List size={16} className="text-primary" />
-                  Your Lists
-                </CardTitle>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={fetchLists}
-                  className="h-7 px-2"
-                >
-                  <span className="text-xs">Refresh</span>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-3 pt-2">
-              {isLoading ? (
-                <div className="flex justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : lists.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground">No lists created yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">Create your first list above</p>
-                </div>
+        
+        {/* Create new list form */}
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium">Add New List</h2>
+          <form onSubmit={handleCreateList} className="flex gap-2">
+            <div className="relative flex-1">
+              <List className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Enter list name"
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                className="pl-8 h-9"
+              />
+            </div>
+            <Button 
+              type="submit"
+              size="sm"
+              disabled={isCreatingList}
+              className="h-9"
+            >
+              {isCreatingList ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  Adding...
+                </>
               ) : (
-                <div className="space-y-2">
+                <>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add List
+                </>
+              )}
+            </Button>
+          </form>
+        </div>
+        
+        {/* Lists section */}
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium flex items-center gap-1.5">
+            Your Lists
+            {isSavingOrder && <Loader2 className="h-3 w-3 animate-spin" />}
+            <span className="text-xs text-green-600 ml-2">
+              ✓ Drag & Drop enabled - grab the handle on the left of each list
+            </span>
+          </h2>
+          
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : lists.length === 0 ? (
+            <div className="bg-muted/30 rounded-md p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                No lists yet. Create your first list above.
+              </p>
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={lists.map(list => list.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="grid gap-2">
                   {lists.map((list) => (
-                    <div
+                    <SortableListItem
                       key={list.id}
-                      className="border rounded-md p-3 hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => router.push(`/group/${params.id}/list/${list.id}`)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div className="min-w-0">
-                          <h3 className="font-medium text-sm truncate">{list.title}</h3>
-                          <p className="text-xs text-muted-foreground">
-                            Created: {new Date(list.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <ChevronRight size={16} className="text-muted-foreground shrink-0" />
-                      </div>
-                    </div>
+                      list={list}
+                      onClick={() => navigateToList(list.id)}
+                    />
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </SortableContext>
+            </DndContext>
+          )}
         </div>
       </div>
     </div>
