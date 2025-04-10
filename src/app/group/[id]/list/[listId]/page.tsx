@@ -435,21 +435,28 @@ export default function ListPage() {
                           onCheckedChange={() => toggleItemCompletion(item.id, item.bought)}
                           className="h-4 w-4 shrink-0"
                         />
-                        {isValidUrl(item.content) ? (
-                          <a 
-                            href={item.content}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`text-blue-600 hover:underline truncate ${item.bought ? "line-through opacity-70" : ""}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {item.content}
-                          </a>
-                        ) : (
-                          <span className={`truncate ${item.bought ? "line-through text-muted-foreground" : ""}`}>
-                            {item.content}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          {isValidUrl(item.content) ? (
+                            <a 
+                              href={item.content}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`text-blue-600 hover:underline truncate ${item.bought ? "line-through opacity-70" : ""}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {item.content}
+                            </a>
+                          ) : (
+                            <span className={`truncate ${item.bought ? "line-through text-muted-foreground" : ""}`}>
+                              {item.content}
+                            </span>
+                          )}
+                          {item.bought && (
+                            <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0">
+                              Bought
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
