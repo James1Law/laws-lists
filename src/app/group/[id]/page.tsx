@@ -62,7 +62,6 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
 
   return (
     <div
-      ref={setNodeRef}
       style={style}
       className={cn(
         "transition-colors",
@@ -70,8 +69,9 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
       )}
     >
       <Card className="relative hover:bg-accent/5 transition-colors border-muted overflow-hidden">
-        {/* Drag handle only - with more distinct styling */}
+        {/* Drag handle only - keep this as the draggable part */}
         <div
+          ref={setNodeRef}
           {...attributes}
           {...listeners}
           className="absolute top-1/2 left-1.5 -translate-y-1/2 cursor-grab active:cursor-grabbing p-1 h-6 w-6 rounded-md hover:bg-accent/10 flex items-center justify-center z-10"
@@ -81,23 +81,20 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
           <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
         
-        {/* Main card content - more compact */}
-        <div className="flex items-center pl-8 pr-2 py-2.5">
+        {/* Main card content - make whole area clickable */}
+        <div 
+          className="flex items-center pl-8 pr-2 py-2.5 cursor-pointer" 
+          onClick={onClick}
+        >
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-sm truncate">{list.title}</h3>
             <p className="text-xs text-muted-foreground">
               {new Date(list.created_at).toLocaleDateString()}
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClick}
-            className="ml-2 h-7 px-2"
-          >
+          <div className="ml-2 text-muted-foreground">
             <ChevronRight className="h-3.5 w-3.5" />
-            <span className="sr-only">View Items</span>
-          </Button>
+          </div>
         </div>
       </Card>
     </div>
