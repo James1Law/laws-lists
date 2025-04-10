@@ -75,36 +75,40 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
       )}
     >
       <Card className="relative hover:bg-accent/5 transition-colors border-muted overflow-hidden">
-        {/* Drag handle only - keep this as the draggable part */}
+        {/* Drag handle with increased size */}
         <div
           ref={setNodeRef}
           {...attributes}
           {...listeners}
-          className="absolute top-1/2 left-1.5 -translate-y-1/2 cursor-grab active:cursor-grabbing p-1 h-6 w-6 rounded-md hover:bg-accent/10 flex items-center justify-center z-10"
+          className="absolute top-1/2 left-1.5 -translate-y-1/2 cursor-grab active:cursor-grabbing p-1.5 h-8 w-8 rounded-md hover:bg-accent/10 flex items-center justify-center z-10"
           style={{ touchAction: 'none' }}
           title="Drag to reorder"
         >
-          <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
         
-        {/* Simplified card content with progress counter */}
+        {/* Optimized single-row layout */}
         <div 
-          className="flex flex-col pl-8 pr-2 py-2 cursor-pointer" 
+          className="flex items-center pl-10 pr-2 py-2.5 cursor-pointer min-h-[44px]" 
           onClick={onClick}
         >
-          <div className="flex items-center justify-between w-full">
+          {/* List title - left aligned, truncated if needed */}
+          <div className="flex-1 min-w-0 mr-3">
             <h3 className="font-medium text-sm truncate">{list.title}</h3>
-            <div className="ml-2 text-muted-foreground">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </div>
           </div>
           
-          {/* Progress counter */}
-          <div className="text-xs text-muted-foreground mt-0.5 flex items-center justify-end">
-            <span>{boughtItems} / {totalItems} bought</span>
-            <span className="text-green-500 ml-1 inline-flex items-center">
-              <Check className="h-3 w-3" />
-            </span>
+          {/* Counter and chevron in one group - right aligned */}
+          <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+            {/* Progress counter */}
+            <div className="text-xs flex items-center whitespace-nowrap">
+              <span>{boughtItems} / {totalItems} bought</span>
+              <span className="text-green-500 ml-1 inline-flex items-center">
+                <Check className="h-3 w-3" />
+              </span>
+            </div>
+            
+            {/* Chevron indicator */}
+            <ChevronRight className="h-3.5 w-3.5" />
           </div>
         </div>
       </Card>
