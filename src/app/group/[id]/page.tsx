@@ -440,7 +440,6 @@ export default function GroupPage({ params }: { params: { id: string } }) {
         
         {/* Create new list form */}
         <div className="space-y-2">
-          <h2 className="text-sm font-medium">Add New List</h2>
           <form onSubmit={handleCreateList} className="flex gap-2">
             <div className="relative flex-1">
               <List className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
