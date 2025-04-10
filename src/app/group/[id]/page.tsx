@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, List, ArrowLeft, LogOut, Lock, ChevronRight, GripVertical, Check } from "lucide-react";
+import { Loader2, Plus, List, ArrowLeft, LogOut, Lock, ChevronRight, GripVertical, Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -327,6 +327,19 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     router.push(`/group/${params.id}/list/${listId}`);
   };
 
+  // Copy the current URL to clipboard
+  const handleCopyLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url)
+      .then(() => {
+        toast.success("Link copied to clipboard");
+      })
+      .catch((error) => {
+        console.error("Failed to copy link:", error);
+        toast.error("Failed to copy link");
+      });
+  };
+
   useEffect(() => {
     // Check if the user is authenticated
     const auth = sessionStorage.getItem(`group_auth_${params.id}`);
@@ -427,15 +440,26 @@ export default function GroupPage({ params }: { params: { id: string } }) {
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className="h-8 text-xs"
-          >
-            <LogOut className="h-3 w-3 mr-1" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyLink}
+              className="h-8 text-xs"
+            >
+              <Copy className="h-3 w-3 mr-1" />
+              Copy Link
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="h-8 text-xs"
+            >
+              <LogOut className="h-3 w-3 mr-1" />
+              Logout
+            </Button>
+          </div>
         </header>
         
         {/* Create new list form */}
