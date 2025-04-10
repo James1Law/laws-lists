@@ -462,81 +462,84 @@ export default function GroupPage({ params }: { params: { id: string } }) {
           </div>
         </header>
         
-        {/* Create new list form */}
-        <div className="space-y-2">
-          <form onSubmit={handleCreateList} className="flex gap-2">
-            <div className="relative flex-1">
-              <List className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Enter list name"
-                value={newListName}
-                onChange={(e) => setNewListName(e.target.value)}
-                className="pl-8 h-9"
-              />
-            </div>
-            <Button 
-              type="submit"
-              size="sm"
-              disabled={isCreatingList}
-              className="h-9"
-            >
-              {isCreatingList ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add List
-                </>
-              )}
-            </Button>
-          </form>
-        </div>
-        
-        {/* Lists section */}
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium flex items-center gap-1.5">
-            {isSavingOrder && <Loader2 className="h-3 w-3 animate-spin" />}
-            <span className="text-xs text-green-600">
-              ✓ Use the <GripVertical className="inline h-3 w-3 mx-0.5" /> handle to reorder lists
-            </span>
-          </h2>
-          
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : lists.length === 0 ? (
-            <div className="bg-muted/30 rounded-md p-8 text-center">
-              <p className="text-sm text-muted-foreground">
-                No lists yet. Create your first list above.
-              </p>
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext 
-                items={lists.map(list => list.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="grid gap-2">
-                  {lists.map((list) => (
-                    <SortableListItem
-                      key={list.id}
-                      list={list}
-                      onClick={() => navigateToList(list.id)}
-                    />
-                  ))}
+        {/* Create new list form in a card */}
+        <div className="grid grid-cols-1 gap-3">
+          <Card className="shadow-sm">
+            <CardContent className="p-3">
+              <form onSubmit={handleCreateList} className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    placeholder="Enter list name"
+                    value={newListName}
+                    onChange={(e) => setNewListName(e.target.value)}
+                    className="h-9"
+                  />
                 </div>
-              </SortableContext>
-            </DndContext>
-          )}
+                <Button 
+                  type="submit"
+                  size="sm"
+                  disabled={isCreatingList}
+                  className="h-9"
+                >
+                  {isCreatingList ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add List
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+          
+          {/* Lists section */}
+          <div className="space-y-2">
+            <h2 className="text-sm font-medium flex items-center gap-1.5">
+              {isSavingOrder && <Loader2 className="h-3 w-3 animate-spin" />}
+              <span className="text-xs text-green-600">
+                ✓ Use the <GripVertical className="inline h-3 w-3 mx-0.5" /> handle to reorder lists
+              </span>
+            </h2>
+            
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : lists.length === 0 ? (
+              <div className="bg-muted/30 rounded-md p-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No lists yet. Create your first list above.
+                </p>
+              </div>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext 
+                  items={lists.map(list => list.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="grid gap-2">
+                    {lists.map((list) => (
+                      <SortableListItem
+                        key={list.id}
+                        list={list}
+                        onClick={() => navigateToList(list.id)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+          </div>
         </div>
       </div>
     </div>
