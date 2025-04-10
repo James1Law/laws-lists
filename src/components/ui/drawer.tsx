@@ -44,6 +44,12 @@ interface DrawerProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps
 
 const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
   ({ className, size, open, onClose, overlay = true, children, ...props }, ref) => {
+    const drawerRef = React.useRef<HTMLDivElement | null>(null)
+    const handleRef = React.useRef<HTMLDivElement | null>(null)
+    const [dragging, setDragging] = React.useState(false)
+    const [dragOffset, setDragOffset] = React.useState(0)
+    const [startY, setStartY] = React.useState(0)
+    
     // Add ESC key listener
     React.useEffect(() => {
       const handleEsc = (event: KeyboardEvent) => {
@@ -69,13 +75,92 @@ const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
       }
     }, [open])
 
+    // Handle drag start
+    const handleDragStart = (clientY: number) => {
+      setDragging(true)
+      setStartY(clientY)
+      setDragOffset(0)
+      
+      // Remove transition during dragging for smoother movement
+      if (drawerRef.current) {
+        drawerRef.current.style.transition = 'none'
+      }
+    }
+    
+    // Handle drag move
+    const handleDragMove = (clientY: number) => {
+      if (!dragging) return
+      
+      const deltaY = clientY - startY
+      if (deltaY < 0) return // Don't allow dragging up
+      
+      setDragOffset(deltaY)
+      
+      if (drawerRef.current) {
+        drawerRef.current.style.transform = `translateY(${deltaY}px)`
+      }
+    }
+    
+    // Handle drag end
+    const handleDragEnd = () => {
+      setDragging(false)
+      
+      // Restore transition for smooth animation
+      if (drawerRef.current) {
+        drawerRef.current.style.transition = 'transform 300ms ease-in-out'
+        drawerRef.current.style.transform = '' // Reset inline transform
+      }
+      
+      // If dragged more than 150px or with velocity, close the drawer
+      const threshold = drawerRef.current ? drawerRef.current.clientHeight * 0.25 : 150
+      
+      if (dragOffset > threshold) {
+        onClose()
+      }
+    }
+    
+    // Mouse events for desktop
+    const handleMouseDown = (e: React.MouseEvent) => {
+      handleDragStart(e.clientY)
+      
+      const handleMouseMove = (e: MouseEvent) => {
+        handleDragMove(e.clientY)
+      }
+      
+      const handleMouseUp = () => {
+        handleDragEnd()
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+      
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
+    
+    // Touch events for mobile
+    const handleTouchStart = (e: React.TouchEvent) => {
+      handleDragStart(e.touches[0].clientY)
+    }
+    
+    const handleTouchMove = (e: React.TouchEvent) => {
+      handleDragMove(e.touches[0].clientY)
+    }
+    
+    const handleTouchEnd = () => {
+      handleDragEnd()
+    }
+
     if (!open) return null
 
     return (
       <>
         {overlay && <DrawerOverlay onClick={onClose} data-state={open ? "open" : "closed"} />}
         <div
-          ref={ref}
+          ref={(node) => {
+            if (typeof ref === 'function') ref(node) 
+            else if (ref) ref.current = node
+            drawerRef.current = node
+          }}
           className={cn(
             drawerVariants({ size }),
             open ? "translate-y-0" : "translate-y-full",
@@ -83,8 +168,18 @@ const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
           )}
           {...props}
         >
-          <div className="sticky top-0 z-20 flex w-full items-center justify-center border-b bg-background py-3">
-            <div className="h-1 w-10 rounded-full bg-muted/60" />
+          <div 
+            className="sticky top-0 z-20 flex w-full items-center justify-center border-b bg-background py-3 cursor-grab active:cursor-grabbing"
+            ref={handleRef}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div 
+              className="h-1 w-10 rounded-full bg-muted/60" 
+              aria-label="Drag to close"
+            />
             <button
               onClick={onClose}
               className="absolute right-4 inline-flex h-8 w-8 items-center justify-center rounded-md border-none text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none"
