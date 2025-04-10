@@ -383,7 +383,8 @@ export default function ListPage() {
                     value={newItemContent}
                     onChange={(e) => setNewItemContent(e.target.value)}
                     placeholder="Enter item name"
-                    className="h-9"
+                    className="h-auto min-h-9 py-2 overflow-x-auto"
+                    style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
                     required
                   />
                 </div>
@@ -427,13 +428,13 @@ export default function ListPage() {
                   items.map(item => (
                     <div 
                       key={item.id} 
-                      className="flex items-center justify-between p-2 rounded-md border text-sm"
+                      className="flex items-start justify-between p-2 rounded-md border text-sm"
                     >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
                         <Checkbox 
                           checked={item.bought} 
                           onCheckedChange={() => toggleItemCompletion(item.id, item.bought)}
-                          className="h-4 w-4 shrink-0"
+                          className="h-4 w-4 shrink-0 mt-0.5"
                         />
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           {isValidUrl(item.content) ? (
@@ -441,13 +442,15 @@ export default function ListPage() {
                               href={item.content}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className={`text-blue-600 hover:underline truncate ${item.bought ? "line-through opacity-70" : ""}`}
+                              className={`text-blue-600 hover:underline break-words ${item.bought ? "line-through opacity-70" : ""}`}
                               onClick={(e) => e.stopPropagation()}
+                              style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
                             >
                               {item.content}
                             </a>
                           ) : (
-                            <span className={`truncate ${item.bought ? "line-through text-muted-foreground" : ""}`}>
+                            <span className={`break-words ${item.bought ? "line-through text-muted-foreground" : ""}`}
+                              style={{ wordWrap: "break-word", overflowWrap: "break-word" }}>
                               {item.content}
                             </span>
                           )}
