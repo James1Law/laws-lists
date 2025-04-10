@@ -365,20 +365,14 @@ export default function ListPage() {
         <div className="grid grid-cols-1 gap-3">
           {/* Compact Create Item Form */}
           <Card className="shadow-sm">
-            <CardHeader className="p-3 pb-0">
-              <CardTitle className="text-base flex items-center gap-1">
-                <Plus size={16} className="text-primary" />
-                Add Item
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-2">
+            <CardContent className="p-3">
               <form onSubmit={handleCreateItem} className="flex gap-2">
                 <div className="flex-1">
                   <Input
                     id="itemContent"
                     value={newItemContent}
                     onChange={(e) => setNewItemContent(e.target.value)}
-                    placeholder="e.g. New headphones"
+                    placeholder="Enter item name"
                     className="h-9"
                     required
                   />
@@ -395,7 +389,10 @@ export default function ListPage() {
                       <span className="hidden sm:inline">Adding...</span>
                     </>
                   ) : (
-                    <>Add</>
+                    <>
+                      <Plus size={14} className="mr-1" />
+                      Add Item
+                    </>
                   )}
                 </Button>
               </form>
