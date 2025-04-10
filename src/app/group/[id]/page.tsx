@@ -81,16 +81,13 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
           <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
         
-        {/* Main card content - make whole area clickable */}
+        {/* Simplified card content - no created_at date */}
         <div 
-          className="flex items-center pl-8 pr-2 py-2.5 cursor-pointer" 
+          className="flex items-center pl-8 pr-2 py-2 cursor-pointer" 
           onClick={onClick}
         >
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-sm truncate">{list.title}</h3>
-            <p className="text-xs text-muted-foreground">
-              {new Date(list.created_at).toLocaleDateString()}
-            </p>
           </div>
           <div className="ml-2 text-muted-foreground">
             <ChevronRight className="h-3.5 w-3.5" />
