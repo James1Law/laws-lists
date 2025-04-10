@@ -266,30 +266,31 @@ export default function GroupPage({ params }: { params: { id: string } }) {
         </header>
 
         <div className="grid grid-cols-1 gap-3">
-          {/* Compact Create List Form */}
+          {/* Create List Form - More Compact */}
           <Card className="shadow-sm">
-            <CardHeader className="p-3 pb-0">
-              <CardTitle className="text-base flex items-center gap-1">
-                <Plus size={16} className="text-primary" />
-                Create New List
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-2">
-              <form onSubmit={handleCreateList} className="flex gap-2">
+            <CardContent className="p-2">
+              <form onSubmit={handleCreateList} className="flex flex-col sm:flex-row gap-1.5">
                 <div className="flex-1">
-                  <Input
-                    value={newListName}
-                    onChange={(e) => setNewListName(e.target.value)}
-                    placeholder="e.g. Christmas 2025"
-                    className="h-9 text-sm"
-                    required
-                  />
+                  <div className="flex items-center mb-1 sm:hidden">
+                    <Plus size={14} className="text-primary mr-1" />
+                    <span className="text-sm font-medium">Create New List</span>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      value={newListName}
+                      onChange={(e) => setNewListName(e.target.value)}
+                      placeholder="e.g. Christmas 2025"
+                      className="h-8 text-sm pl-7 sm:pl-2"
+                      required
+                    />
+                    <Plus size={14} className="absolute left-2 top-2 text-muted-foreground sm:hidden" />
+                  </div>
                 </div>
                 <Button
                   type="submit"
                   size="sm"
                   disabled={isCreatingList}
-                  className="whitespace-nowrap h-9"
+                  className="whitespace-nowrap h-8"
                 >
                   {isCreatingList ? (
                     <>
