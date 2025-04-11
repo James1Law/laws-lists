@@ -318,8 +318,7 @@ export default function ListPage() {
                     value={newItemContent}
                     onChange={(e) => setNewItemContent(e.target.value)}
                     placeholder="Enter item name"
-                    className="h-auto min-h-9 py-2 overflow-x-auto"
-                    style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
+                    className="h-9"
                     required
                   />
                 </div>
