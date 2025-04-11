@@ -10,10 +10,17 @@ export async function GET(
     // Use service role client to bypass RLS
     const supabase = createServiceRoleClient();
     
-    // Fetch items for the list
+    // Fetch items for the list with comment counts
     const { data, error } = await supabase
       .from('items')
-      .select('id, content, bought, list_id, created_at')
+      .select(`
+        id, 
+        content, 
+        bought, 
+        list_id, 
+        created_at,
+        comment_count:comments(count)
+      `)
       .eq('list_id', params.listId)
       .order('created_at', { ascending: false });
     
@@ -24,8 +31,14 @@ export async function GET(
         { status: 500 }
       );
     }
+
+    // Format the response to include the comment count as a number
+    const itemsWithCommentCount = data.map(item => ({
+      ...item,
+      comment_count: item.comment_count?.[0]?.count || 0
+    }));
     
-    return NextResponse.json(data);
+    return NextResponse.json(itemsWithCommentCount);
   } catch (error) {
     console.error('Error in API route:', error);
     return NextResponse.json(

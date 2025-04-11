@@ -33,6 +33,7 @@ type Item = {
   bought: boolean;
   list_id: string;
   created_at: string;
+  comment_count: number;
 };
 
 export default function ListPage() {
@@ -362,7 +363,7 @@ export default function ListPage() {
                   items.map(item => (
                     <div 
                       key={item.id} 
-                      className={`flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-colors ${item.bought ? 'bg-green-50/50' : ''}`}
+                      className={`relative flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-colors ${item.bought ? 'bg-green-50/50' : ''}`}
                       onClick={() => navigateToItem(item)}
                     >
                       <div className="flex items-center flex-1 min-w-0 gap-2">
@@ -378,7 +379,14 @@ export default function ListPage() {
                           </span>
                         )}
                       </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground ml-2 shrink-0" />
+                      <div className="flex flex-col items-end justify-between shrink-0 ml-2">
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        {item.comment_count > 0 && (
+                          <span className="text-xs text-gray-500 mt-1">
+                            💬 {item.comment_count}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))
                 )}
