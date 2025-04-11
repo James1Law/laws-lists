@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, List, ArrowLeft, LogOut, Lock, ChevronRight, GripVertical, Check, Copy } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, LogOut, Lock, ChevronRight, GripVertical, Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -366,26 +366,26 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     return (
       <div className="min-h-screen p-2 sm:p-4 bg-background flex justify-center items-center">
         <Card className="w-full max-w-sm shadow-sm">
-          <CardHeader className="space-y-1 p-3">
-            <div className="flex items-center gap-1 mb-1">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => router.push("/")}
-                className="h-7 w-7 p-0"
-              >
-                <ArrowLeft size={16} />
-              </Button>
-              <span className="text-xs text-muted-foreground">Back to Home</span>
+          <CardContent className="p-3">
+            <Button 
+              variant="outline" 
+              size="default" 
+              onClick={() => router.push("/")}
+              className="w-full mb-4 flex items-center justify-center gap-1 bg-white border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Groups</span>
+            </Button>
+            
+            <div className="mb-4">
+              <h2 className="text-xl font-bold mb-1">
+                {group ? group.name : 'Loading group...'}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Enter the group password to access
+              </p>
             </div>
-            <CardTitle className="text-xl font-bold">
-              {group ? group.name : 'Loading group...'}
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Enter the group password to access
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
+            
             <form onSubmit={handleAuthenticate} className="space-y-3">
               <div className="space-y-1">
                 <Label htmlFor="password" className="text-sm">Group Password</Label>
@@ -427,24 +427,26 @@ export default function GroupPage({ params }: { params: { id: string } }) {
   return (
     <div className="min-h-screen p-2 sm:p-4 bg-background">
       <div className="max-w-4xl mx-auto space-y-4">
+        {/* Back button - more prominent and positioned above the header */}
+        <Button 
+          variant="outline" 
+          size="default" 
+          onClick={() => router.push("/")}
+          className="w-full sm:w-auto flex items-center justify-center gap-1 mb-2 bg-white border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors"
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Groups</span>
+        </Button>
+        
+        {/* Group Header */}
         <header className="flex justify-between items-center gap-2 border-b pb-2">
-          <div className="flex items-center gap-1">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => router.push("/")}
-              className="h-7 w-7 p-0"
-            >
-              <ArrowLeft size={16} />
-            </Button>
-            <div>
-              <h1 className="text-lg font-bold line-clamp-1">
-                {group?.name || 'Loading...'}
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                Manage your lists
-              </p>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold line-clamp-1">
+              {group?.name || 'Loading...'}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Manage your lists
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Button
