@@ -15,7 +15,7 @@ export async function GET(
       .from('lists')
       .select('id, title, created_at, group_id, position')
       .eq('group_id', params.id)
-      .order('created_at', { ascending: false });
+      .order('position', { ascending: true });
     
     if (error) {
       console.error('Error fetching lists:', error);
@@ -58,9 +58,8 @@ export async function GET(
       })
     );
     
-    // Sort manually to ensure nulls are last
-    // And position is the primary sort key with created_at as secondary
-    const sortedData = listsWithCounts.sort((a, b) => {
+    // Sort lists by position with nulls last
+    const sortedLists = listsWithCounts.sort((a, b) => {
       // If both have position values, sort by position
       if (a.position !== null && b.position !== null) {
         return a.position - b.position;
@@ -69,11 +68,11 @@ export async function GET(
       if (a.position !== null) return -1;
       // If only b has position, b comes first
       if (b.position !== null) return 1;
-      // If neither has position, sort by created_at descending
+      // If neither has position, sort by created_at descending (newest first)
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
     
-    return NextResponse.json(sortedData);
+    return NextResponse.json(sortedLists);
   } catch (error) {
     console.error('Error in API route:', error);
     return NextResponse.json(
@@ -90,21 +89,32 @@ export async function POST(
 ) {
   try {
     const { name } = await request.json();
+    
+    // Validate input
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      return NextResponse.json(
+        { error: 'List name is required' },
+        { status: 400 }
+      );
+    }
+    
     // Use service role client to bypass RLS
     const supabase = createServiceRoleClient();
     
-    // Get the highest position value to put the new list at the top
-    const { data: highestPositionList } = await supabase
+    // Get the minimum position value (lowest number will be at the top)
+    const { data: lowestPositionList } = await supabase
       .from('lists')
       .select('position')
       .eq('group_id', params.id)
-      .order('position', { ascending: false })
+      .order('position', { ascending: true })
       .limit(1)
       .single();
     
-    // Default to position 0 if no lists exist or if there was an error
-    const newPosition = highestPositionList?.position !== undefined 
-      ? highestPositionList.position - 1 
+    // Position the new list at the top
+    // If there's a list with position 0, use position -1
+    // If no lists exist or the first list has position null, use position 0
+    const newPosition = lowestPositionList?.position !== null && lowestPositionList?.position !== undefined
+      ? lowestPositionList.position - 1
       : 0;
     
     // Create a new list
@@ -112,7 +122,7 @@ export async function POST(
       .from('lists')
       .insert([
         {
-          title: name, // Map the name from request to title in database
+          title: name.trim(), // Map the name from request to title in database
           group_id: params.id,
           position: newPosition,
         },
@@ -128,7 +138,14 @@ export async function POST(
       );
     }
     
-    return NextResponse.json(data);
+    // Fetch counts for the new list
+    const listWithCounts = {
+      ...data,
+      totalItems: 0,
+      boughtItems: 0
+    };
+    
+    return NextResponse.json(listWithCounts);
   } catch (error) {
     console.error('Error in API route:', error);
     return NextResponse.json(
@@ -153,10 +170,47 @@ export async function PATCH(
       );
     }
     
+    // Validate list data
+    const isValidListData = lists.every(item => 
+      typeof item.id === 'string' && 
+      typeof item.position === 'number' && 
+      Number.isInteger(item.position)
+    );
+    
+    if (!isValidListData) {
+      return NextResponse.json(
+        { error: 'Lists must have valid id and position values' },
+        { status: 400 }
+      );
+    }
+    
     // Use service role client to bypass RLS
     const supabase = createServiceRoleClient();
     
-    // Process list updates in sequence
+    // Verify all lists belong to this group
+    const listIds = lists.map(list => list.id);
+    const { data: existingLists, error: checkError } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('group_id', params.id)
+      .in('id', listIds);
+    
+    if (checkError) {
+      console.error('Error checking list ownership:', checkError);
+      return NextResponse.json(
+        { error: 'Failed to verify list ownership' },
+        { status: 500 }
+      );
+    }
+    
+    if (existingLists.length !== listIds.length) {
+      return NextResponse.json(
+        { error: 'Some lists do not belong to this group' },
+        { status: 403 }
+      );
+    }
+    
+    // Update each list position with efficient batching
     const updatePromises = lists.map(({ id, position }) => 
       supabase
         .from('lists')
@@ -165,7 +219,17 @@ export async function PATCH(
         .eq('group_id', params.id)
     );
     
-    await Promise.all(updatePromises);
+    const results = await Promise.all(updatePromises);
+    
+    // Check for errors in any of the update operations
+    const errors = results.filter(result => result.error);
+    if (errors.length > 0) {
+      console.error('Errors updating list positions:', errors);
+      return NextResponse.json(
+        { error: 'Some list positions failed to update' },
+        { status: 500 }
+      );
+    }
     
     return NextResponse.json({ success: true });
   } catch (error) {

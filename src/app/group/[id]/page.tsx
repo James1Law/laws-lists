@@ -182,38 +182,44 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     
     if (!over || active.id === over.id) return;
     
+    // Track the updated lists to use for the API call
+    let updatedListsForApi: { id: string; position: number }[] = [];
+    
     // Optimistically update the UI
-    setLists((items) => {
-      const oldIndex = items.findIndex((item) => item.id === active.id);
-      const newIndex = items.findIndex((item) => item.id === over.id);
+    setLists((prevItems) => {
+      const oldIndex = prevItems.findIndex((item) => item.id === active.id);
+      const newIndex = prevItems.findIndex((item) => item.id === over.id);
       
-      if (oldIndex === -1 || newIndex === -1) return items;
+      if (oldIndex === -1 || newIndex === -1) return prevItems;
       
       // Create a new array with the item moved to the new position
-      const newItems = arrayMove(items, oldIndex, newIndex);
+      const newItems = arrayMove(prevItems, oldIndex, newIndex);
       
       // Update positions based on new order
-      return newItems.map((item, index) => ({
+      const itemsWithNewPositions = newItems.map((item, index) => ({
         ...item,
         position: index,
       }));
+      
+      // Store the updated list data for the API call
+      updatedListsForApi = itemsWithNewPositions.map(item => ({
+        id: item.id,
+        position: item.position,
+      }));
+      
+      return itemsWithNewPositions;
     });
 
     // Save the new order to the database
     setIsSavingOrder(true);
     try {
-      const listsWithPositions = lists.map((list, index) => ({
-        id: list.id,
-        position: index,
-      }));
-
       const response = await fetch(`/api/groups/${params.id}/lists`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          lists: listsWithPositions,
+          lists: updatedListsForApi,
         }),
       });
       
@@ -221,7 +227,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
         throw new Error('Failed to update list order');
       }
       
-      toast.success("List order updated");
+      // Update was successful - no need to show a toast for a common action
     } catch (error) {
       console.error("Error updating list order:", error);
       toast.error("Failed to save list order");
@@ -230,7 +236,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     } finally {
       setIsSavingOrder(false);
     }
-  }, [lists, params.id, fetchLists]);
+  }, [params.id, fetchLists]);
 
   // Handle authentication
   const handleAuthenticate = async (e: React.FormEvent) => {
@@ -498,13 +504,20 @@ export default function GroupPage({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
           
-          {/* Lists section */}
+          {/* Group lists section */}
           <div className="space-y-2">
             <h2 className="text-sm font-medium flex items-center gap-1.5">
-              {isSavingOrder && <Loader2 className="h-3 w-3 animate-spin" />}
-              <span className="text-xs text-green-600">
-                ✓ Use the <GripVertical className="inline h-3 w-3 mx-0.5" /> handle to reorder lists
-              </span>
+              {isSavingOrder && 
+                <div className="flex items-center gap-1 text-xs text-amber-600">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Saving...</span>
+                </div>
+              }
+              {!isSavingOrder &&
+                <span className="text-xs text-green-600">
+                  ✓ Use the <GripVertical className="inline h-3 w-3 mx-0.5" /> handle to reorder lists
+                </span>
+              }
             </h2>
             
             {isLoading ? (
