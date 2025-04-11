@@ -1,6 +1,41 @@
 import { createServiceRoleClient } from '@/lib/supabase-client';
 import { NextResponse } from 'next/server';
 
+// GET a specific item by ID
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string; listId: string; itemId: string } }
+) {
+  try {
+    // Use service role client to bypass RLS
+    const supabase = createServiceRoleClient();
+    
+    // Fetch the item
+    const { data, error } = await supabase
+      .from('items')
+      .select('id, content, bought, list_id, created_at')
+      .eq('id', params.itemId)
+      .eq('list_id', params.listId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching item:', error);
+      return NextResponse.json(
+        { error: 'Item not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error in API route:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 // PATCH to update an item (toggle bought status)
 export async function PATCH(
   request: Request,

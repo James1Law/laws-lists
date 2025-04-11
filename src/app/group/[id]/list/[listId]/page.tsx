@@ -18,14 +18,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Drawer,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
 
 // Define types
 type ListDetails = {
@@ -40,13 +32,6 @@ type Item = {
   content: string;
   bought: boolean;
   list_id: string;
-  created_at: string;
-};
-
-// Add comment type
-type Comment = {
-  id: string;
-  content: string;
   created_at: string;
 };
 
@@ -70,14 +55,6 @@ export default function ListPage() {
   // For list deletion
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // For drawer and comments
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
-  const [newComment, setNewComment] = useState("");
-  const [isAddingComment, setIsAddingComment] = useState(false);
 
   // Wrap the functions in useCallback to avoid dependency issues
   const fetchListDetails = useCallback(async () => {
@@ -227,169 +204,9 @@ export default function ListPage() {
     }
   };
 
-  // Toggle item bought status
-  const toggleItemCompletion = async (itemId: string, currentState: boolean) => {
-    try {
-      // First update the selectedItem if it's the one being toggled (for drawer UI)
-      if (selectedItem && selectedItem.id === itemId) {
-        setSelectedItem({
-          ...selectedItem,
-          bought: !currentState
-        });
-      }
-      
-      // Optimistically update UI for list items
-      setItems(prevItems => 
-        prevItems.map(item => 
-          item.id === itemId ? { ...item, bought: !currentState } : item
-        )
-      );
-      
-      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${itemId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ bought: !currentState }),
-      });
-      
-      if (!response.ok) {
-        // If error, revert the change in both states
-        setItems(prevItems => 
-          prevItems.map(item => 
-            item.id === itemId ? { ...item, bought: currentState } : item
-          )
-        );
-        
-        if (selectedItem && selectedItem.id === itemId) {
-          setSelectedItem({
-            ...selectedItem,
-            bought: currentState
-          });
-        }
-        
-        throw new Error('Failed to update item');
-      }
-      
-      toast.success(currentState ? 'Item marked as not bought' : 'Item marked as bought');
-    } catch (error) {
-      console.error("Error toggling item status:", error);
-      toast.error("Failed to update item");
-    }
-  };
-
-  // Delete an item
-  const deleteItem = async (itemId: string) => {
-    try {
-      // Store item for recovery
-      const itemToDelete = items.find(item => item.id === itemId);
-      
-      // Optimistically update UI
-      setItems(prevItems => prevItems.filter(item => item.id !== itemId));
-      
-      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${itemId}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        // If error, revert the deletion
-        if (itemToDelete) {
-          setItems(prevItems => [...prevItems, itemToDelete]);
-        }
-        throw new Error('Failed to delete item');
-      }
-      
-      toast.success('Item deleted');
-    } catch (error) {
-      console.error("Error deleting item:", error);
-      toast.error("Failed to delete item");
-    }
-  };
-
-  // Fetch comments for an item
-  const fetchComments = useCallback(async (itemId: string) => {
-    setIsLoadingComments(true);
-    try {
-      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${itemId}/comments`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch comments');
-      }
-      const data = await response.json();
-      setComments(data);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-      toast.error("Failed to load comments");
-    } finally {
-      setIsLoadingComments(false);
-    }
-  }, [groupId, listId]);
-
-  // Add a comment
-  const addComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedItem) return;
-    if (!newComment.trim()) {
-      toast.error("Please enter a comment");
-      return;
-    }
-    
-    setIsAddingComment(true);
-    
-    try {
-      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${selectedItem.id}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: newComment }),
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to add comment');
-      }
-      
-      const newCommentData = await response.json();
-      
-      // Add to local state
-      setComments(prevComments => [newCommentData, ...prevComments]);
-      setNewComment("");
-      
-      toast.success("Comment added");
-    } catch (error: unknown) {
-      console.error("Error adding comment:", error);
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to add comment");
-      }
-    } finally {
-      setIsAddingComment(false);
-    }
-  };
-
-  // Open drawer with item details
-  const openItemDrawer = (item: Item) => {
-    setSelectedItem(item);
-    fetchComments(item.id);
-    setIsDrawerOpen(true);
-  };
-  
-  // Close drawer
-  const closeDrawer = () => {
-    setIsDrawerOpen(false);
-    setSelectedItem(null);
-    setComments([]);
-    setNewComment("");
-  };
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'PPP p'); // e.g., "Apr 29, 2023 12:34 PM"
-    } catch (error) {
-      return dateString;
-    }
+  // Navigate to item detail page
+  const navigateToItem = (item: Item) => {
+    router.push(`/group/${groupId}/list/${listId}/item/${item.id}`);
   };
 
   useEffect(() => {
@@ -528,7 +345,7 @@ export default function ListPage() {
             </CardContent>
           </Card>
 
-          {/* Compact Items List - Updated to use simpler card & arrow */}
+          {/* Items List */}
           <Card className="shadow-sm">
             <CardHeader className="p-3 pb-0">
               <div className="flex justify-between items-center">
@@ -547,7 +364,7 @@ export default function ListPage() {
                     <div 
                       key={item.id} 
                       className={`flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-colors ${item.bought ? 'bg-green-50/50' : ''}`}
-                      onClick={() => openItemDrawer(item)}
+                      onClick={() => navigateToItem(item)}
                     >
                       <div className="flex items-center flex-1 min-w-0 gap-2">
                         <span 
@@ -604,105 +421,6 @@ export default function ListPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Item Drawer */}
-      <Drawer 
-        open={isDrawerOpen} 
-        onClose={closeDrawer}
-        className="p-0"
-      >
-        {selectedItem && (
-          <>
-            <DrawerHeader className="px-4 pt-2">
-              <DrawerTitle className="text-xl overflow-hidden break-words">
-                {selectedItem.content}
-              </DrawerTitle>
-              <div className="flex items-center justify-between">
-                {/* Toggle for bought status */}
-                <div className="flex items-center space-x-2 mt-2">
-                  <Switch 
-                    id="bought-status" 
-                    checked={selectedItem.bought}
-                    onCheckedChange={() => toggleItemCompletion(selectedItem.id, selectedItem.bought)}
-                  />
-                  <Label htmlFor="bought-status" className="text-sm font-medium">
-                    {selectedItem.bought ? "Marked as bought" : "Mark as bought"}
-                  </Label>
-                </div>
-                
-                {/* Delete button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    closeDrawer();
-                    deleteItem(selectedItem.id);
-                  }}
-                  className="h-8 w-8 p-0 text-red-600 shrink-0"
-                >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            </DrawerHeader>
-            
-            <div className="flex-1 px-4 pb-4">
-              <div className="mb-4">
-                <h3 className="text-sm font-medium mb-2">Comments</h3>
-                
-                {/* Add comment form */}
-                <form onSubmit={addComment} className="flex gap-2 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Add a comment..."
-                      className="h-9"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={isAddingComment}
-                    className="whitespace-nowrap h-9"
-                  >
-                    {isAddingComment ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Add"
-                    )}
-                  </Button>
-                </form>
-                
-                {/* Comments list */}
-                <div className="space-y-3">
-                  {isLoadingComments ? (
-                    <div className="flex justify-center p-4">
-                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : comments.length === 0 ? (
-                    <p className="text-center text-muted-foreground text-sm py-4">
-                      No comments yet
-                    </p>
-                  ) : (
-                    comments.map(comment => (
-                      <div 
-                        key={comment.id} 
-                        className="p-3 rounded-md border text-sm"
-                      >
-                        <p className="break-words">{comment.content}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDate(comment.created_at)}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-      </Drawer>
     </div>
   );
 } 
