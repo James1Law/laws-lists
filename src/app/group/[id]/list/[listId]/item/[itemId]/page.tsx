@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Trash2 } from "lucide-react";
+import { Loader2, ArrowLeft, Trash2, Edit, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -51,6 +51,11 @@ export default function ItemPage() {
   const [newComment, setNewComment] = useState("");
   const [isAddingComment, setIsAddingComment] = useState(false);
   
+  // For item name editing
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  
   // For item deletion
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -64,6 +69,7 @@ export default function ItemPage() {
       }
       const data = await response.json();
       setItem(data);
+      setNewItemName(data.content); // Initialize the edit name field
     } catch (error) {
       console.error("Error fetching item:", error);
       toast.error("Failed to load item details");
@@ -126,6 +132,50 @@ export default function ItemPage() {
     } catch (error) {
       console.error("Error toggling item status:", error);
       toast.error("Failed to update item");
+    }
+  };
+
+  // Update item name
+  const handleUpdateName = async () => {
+    if (!newItemName.trim()) {
+      toast.error("Item name cannot be empty");
+      return;
+    }
+    
+    if (!item) return;
+    
+    setIsUpdatingName(true);
+    
+    try {
+      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${itemId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: newItemName }),
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update item name');
+      }
+      
+      const updatedItem = await response.json();
+      
+      // Update local state
+      setItem(updatedItem);
+      setIsEditingName(false);
+      
+      toast.success("Item name updated");
+    } catch (error: unknown) {
+      console.error("Error updating item name:", error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to update item name");
+      }
+    } finally {
+      setIsUpdatingName(false);
     }
   };
 
@@ -246,20 +296,64 @@ export default function ItemPage() {
         {/* Item Header */}
         <header className="flex justify-between items-center gap-2 border-b pb-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold break-words">
-              {item?.content || 'Loading item...'}
-            </h1>
+            {isEditingName ? (
+              <div className="flex items-center gap-1 flex-1">
+                <Input
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  className="h-8 text-base font-semibold"
+                  placeholder="Item name"
+                  autoFocus
+                />
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleUpdateName}
+                  disabled={isUpdatingName}
+                  className="h-7 w-7 p-1 text-green-600"
+                >
+                  {isUpdatingName ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save size={14} />}
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setIsEditingName(false);
+                    setNewItemName(item?.content || "");
+                  }}
+                  className="h-7 w-7 p-1 text-red-600"
+                >
+                  <X size={14} />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <h1 className="text-xl font-bold break-words">
+                  {item?.content || 'Loading item...'}
+                </h1>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setIsEditingName(true)}
+                  className="h-7 w-7 p-1 text-gray-500"
+                >
+                  <Edit size={12} />
+                </Button>
+              </div>
+            )}
           </div>
           
-          <Button 
-            variant="destructive" 
-            size="sm"
-            onClick={() => setShowDeleteDialog(true)}
-            className="h-7 shrink-0"
-          >
-            <Trash2 size={14} className="mr-1" />
-            <span className="hidden sm:inline">Delete</span>
-          </Button>
+          {!isEditingName && (
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="h-7 shrink-0"
+            >
+              <Trash2 size={14} className="mr-1" />
+              <span className="hidden sm:inline">Delete</span>
+            </Button>
+          )}
         </header>
 
         <div className="grid grid-cols-1 gap-4">

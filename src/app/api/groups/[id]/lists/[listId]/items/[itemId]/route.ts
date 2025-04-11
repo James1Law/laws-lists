@@ -36,20 +36,38 @@ export async function GET(
   }
 }
 
-// PATCH to update an item (toggle bought status)
+// PATCH to update an item (toggle bought status or update content)
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string; listId: string; itemId: string } }
 ) {
   try {
-    const { bought } = await request.json();
+    const body = await request.json();
     // Use service role client to bypass RLS
     const supabase = createServiceRoleClient();
+    
+    // Determine what fields to update (bought status or content or both)
+    const updateData: { bought?: boolean; content?: string } = {};
+    
+    if (body.bought !== undefined) {
+      updateData.bought = body.bought;
+    }
+    
+    if (body.content !== undefined) {
+      // Validate content is not empty
+      if (!body.content || body.content.trim() === '') {
+        return NextResponse.json(
+          { error: 'Item content cannot be empty' },
+          { status: 400 }
+        );
+      }
+      updateData.content = body.content.trim();
+    }
     
     // Update the item
     const { data, error } = await supabase
       .from('items')
-      .update({ bought })
+      .update(updateData)
       .eq('id', params.itemId)
       .eq('list_id', params.listId)
       .select()
