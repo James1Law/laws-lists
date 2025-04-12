@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,13 @@ type Comment = {
   created_at: string;
 };
 
+// Theme options
+const themeOptions = [
+  { id: "default", label: "Default", emoji: "", bgClass: "bg-background" },
+  { id: "birthday", label: "Birthday", emoji: "🎂", bgClass: "bg-yellow-50" },
+  { id: "christmas", label: "Christmas", emoji: "🎄", bgClass: "bg-emerald-900 text-white" },
+];
+
 export default function ItemPage() {
   const router = useRouter();
   const params = useParams();
@@ -67,6 +74,11 @@ export default function ItemPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // For theme-related functionality
+  const [listTheme, setListTheme] = useState<string>("default");
+  const animationTriggered = useRef(false);
+  const cleanupFn = useRef<(() => void) | null>(null);
+
   // Fetch item details
   const fetchItem = useCallback(async () => {
     try {
@@ -77,6 +89,13 @@ export default function ItemPage() {
       const data = await response.json();
       setItem(data);
       setNewItemName(data.content); // Initialize the edit name field
+      
+      // Fetch the parent list to get its theme
+      const listResponse = await fetch(`/api/groups/${groupId}/lists/${listId}`);
+      if (listResponse.ok) {
+        const listData = await listResponse.json();
+        setListTheme(listData.theme || "default");
+      }
     } catch (error) {
       console.error("Error fetching item:", error);
       toast.error("Failed to load item details");
@@ -109,6 +128,8 @@ export default function ItemPage() {
     if (!item) return;
     
     const currentState = item.bought;
+    const switchElement = document.getElementById('bought-status');
+    const elementRect = switchElement?.getBoundingClientRect() || { left: 0, top: 0, width: 0, height: 0 };
     
     // Optimistically update UI
     setItem({
@@ -133,6 +154,13 @@ export default function ItemPage() {
         });
         
         throw new Error('Failed to update item');
+      }
+      
+      // Show animation when marking as bought (not when unmarking)
+      if (!currentState && listTheme && listTheme !== 'default') {
+        import('@/lib/animations').then(({ triggerItemAnimation }) => {
+          triggerItemAnimation(elementRect);
+        });
       }
       
       toast.success(currentState ? 'Item marked as not bought' : 'Item marked as bought');
@@ -360,6 +388,43 @@ export default function ItemPage() {
     }
   };
 
+  // Initialize animations based on theme
+  useEffect(() => {
+    if (isLoading || animationTriggered.current) return;
+    
+    const timer = setTimeout(() => {
+      // Only run animations if we have a special theme
+      if (listTheme === 'birthday') {
+        import('@/lib/animations').then(({ triggerBirthdayAnimation }) => {
+          triggerBirthdayAnimation();
+          animationTriggered.current = true;
+        });
+      } else if (listTheme === 'christmas') {
+        import('@/lib/animations').then(({ createSnowfall, removeSnowfall }) => {
+          // Clean up any existing snowfall first
+          removeSnowfall();
+          // Create new snowfall
+          cleanupFn.current = createSnowfall();
+          animationTriggered.current = true;
+        });
+      }
+    }, 300); // Small delay to ensure the page is rendered
+    
+    return () => {
+      clearTimeout(timer);
+      // Clean up any snowfall when unmounting
+      if (cleanupFn.current) {
+        cleanupFn.current();
+        cleanupFn.current = null;
+      } else if (listTheme === 'christmas') {
+        // In case the cleanup function wasn't captured
+        import('@/lib/animations').then(({ removeSnowfall }) => {
+          removeSnowfall();
+        });
+      }
+    };
+  }, [listTheme, isLoading]);
+
   useEffect(() => {
     // Check authentication status
     const auth = sessionStorage.getItem(`group_auth_${groupId}`);
@@ -375,6 +440,9 @@ export default function ItemPage() {
     fetchComments();
   }, [groupId, listId, itemId, router, fetchItem, fetchComments]);
 
+  // Get the current theme styles
+  const currentTheme = themeOptions.find(t => t.id === listTheme) || themeOptions[0];
+
   if (isLoading) {
     return (
       <div className="min-h-screen p-2 bg-background flex justify-center items-center">
@@ -384,14 +452,18 @@ export default function ItemPage() {
   }
 
   return (
-    <div className="min-h-screen p-2 sm:p-4 bg-background">
+    <div className={`min-h-screen p-2 sm:p-4 ${currentTheme.bgClass}`}>
       <div className="max-w-4xl mx-auto space-y-4">
         {/* Back button - more prominent and positioned above the header */}
         <Button 
           variant="outline" 
           size="default" 
           onClick={() => router.push(`/group/${groupId}/list/${listId}`)}
-          className="w-full sm:w-auto flex items-center justify-center gap-1 mb-2 bg-white border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors"
+          className={`w-full sm:w-auto flex items-center justify-center gap-1 mb-2 ${
+            listTheme === 'christmas' 
+              ? 'bg-white/20 border-white/30 text-white hover:bg-white/30 transition-colors' 
+              : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors'
+          }`}
         >
           <ArrowLeft size={16} />
           <span>Back to List</span>
@@ -433,6 +505,9 @@ export default function ItemPage() {
             ) : (
               <div className="flex items-center gap-1">
                 <h1 className="text-xl font-bold break-words">
+                  {currentTheme.emoji && listTheme !== 'default' && (
+                    <span className="mr-1" aria-hidden="true">{currentTheme.emoji}</span>
+                  )}
                   {item?.content || 'Loading item...'}
                 </h1>
                 <Button 
@@ -474,7 +549,7 @@ export default function ItemPage() {
           </div>
           
           {/* Comments section */}
-          <Card className="shadow-sm">
+          <Card className={`shadow-sm ${listTheme === 'christmas' ? 'bg-white/90' : ''}`}>
             <CardHeader className="p-3 pb-2">
               <CardTitle className="text-base">Comments</CardTitle>
             </CardHeader>
