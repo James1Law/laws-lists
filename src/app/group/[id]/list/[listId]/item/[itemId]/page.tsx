@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Trash2, Edit, Save, X } from "lucide-react";
+import { Loader2, ArrowLeft, Trash2, Edit, Save, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -50,6 +51,12 @@ export default function ItemPage() {
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isAddingComment, setIsAddingComment] = useState(false);
+  
+  // For comment editing and deletion
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editedCommentContent, setEditedCommentContent] = useState("");
+  const [isUpdatingComment, setIsUpdatingComment] = useState(false);
+  const [hoverCommentId, setHoverCommentId] = useState<string | null>(null);
   
   // For item name editing
   const [isEditingName, setIsEditingName] = useState(false);
@@ -247,6 +254,103 @@ export default function ItemPage() {
     }
   };
 
+  // Start editing a comment
+  const startEditingComment = (comment: Comment) => {
+    setEditingCommentId(comment.id);
+    setEditedCommentContent(comment.content);
+  };
+
+  // Cancel editing a comment
+  const cancelEditingComment = () => {
+    setEditingCommentId(null);
+    setEditedCommentContent("");
+  };
+
+  // Update a comment
+  const updateComment = async (commentId: string) => {
+    if (!editedCommentContent.trim()) {
+      toast.error("Comment cannot be empty");
+      return;
+    }
+    
+    setIsUpdatingComment(true);
+    
+    try {
+      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${itemId}/comments`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          commentId, 
+          content: editedCommentContent 
+        }),
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update comment');
+      }
+      
+      const updatedComment = await response.json();
+      
+      // Update in local state
+      setComments(prevComments => 
+        prevComments.map(comment => 
+          comment.id === commentId ? updatedComment : comment
+        )
+      );
+      
+      // Reset editing state
+      setEditingCommentId(null);
+      setEditedCommentContent("");
+      
+      toast.success("Comment updated");
+    } catch (error: unknown) {
+      console.error("Error updating comment:", error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to update comment");
+      }
+    } finally {
+      setIsUpdatingComment(false);
+    }
+  };
+
+  // Delete a comment
+  const deleteComment = async (commentId: string) => {
+    // Confirm deletion
+    if (!window.confirm("Are you sure you want to delete this comment?")) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${itemId}/comments?commentId=${commentId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete comment');
+      }
+      
+      // Remove from local state
+      setComments(prevComments => 
+        prevComments.filter(comment => comment.id !== commentId)
+      );
+      
+      toast.success("Comment deleted");
+    } catch (error: unknown) {
+      console.error("Error deleting comment:", error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to delete comment");
+      }
+    }
+  };
+
   // Format date for display
   const formatDate = (dateString: string) => {
     try {
@@ -413,12 +517,84 @@ export default function ItemPage() {
                   comments.map(comment => (
                     <div 
                       key={comment.id} 
-                      className="p-3 rounded-md border text-sm"
+                      className="p-3 rounded-md border text-sm relative"
+                      onMouseEnter={() => setHoverCommentId(comment.id)}
+                      onMouseLeave={() => setHoverCommentId(null)}
+                      onTouchStart={() => setHoverCommentId(comment.id)}
                     >
-                      <p className="break-words">{comment.content}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDate(comment.created_at)}
-                      </p>
+                      {/* Show edit/delete buttons on hover */}
+                      {(hoverCommentId === comment.id || editingCommentId === comment.id) && (
+                        <div className="absolute top-2 right-2 flex gap-1 touch-manipulation">
+                          {editingCommentId !== comment.id && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 sm:h-6 sm:w-6 rounded-full bg-gray-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditingComment(comment);
+                                }}
+                              >
+                                <Pencil size={16} className="text-gray-500" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 sm:h-6 sm:w-6 rounded-full bg-gray-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteComment(comment.id);
+                                }}
+                              >
+                                <Trash2 size={16} className="text-red-500" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Edit mode */}
+                      {editingCommentId === comment.id ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={editedCommentContent}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditedCommentContent(e.target.value)}
+                            className="min-h-[80px] text-sm"
+                            autoFocus
+                          />
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={cancelEditingComment}
+                              className="h-7 text-xs"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => updateComment(comment.id)}
+                              disabled={isUpdatingComment}
+                              className="h-7 text-xs"
+                            >
+                              {isUpdatingComment ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                "Save"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="break-words pr-12">{comment.content}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatDate(comment.created_at)}
+                          </p>
+                        </>
+                      )}
                     </div>
                   ))
                 )}
