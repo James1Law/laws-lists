@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Plus, Trash2, Edit, Save, X, ChevronRight } from "lucide-react";
+import { Loader2, ArrowLeft, Plus, Trash2, Edit, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 // Define types
 type ListDetails = {
@@ -358,34 +359,44 @@ export default function ListPage() {
         }`}>
           <div className="flex-1 min-w-0">
             {isEditingTitle ? (
-              <div className="flex items-center gap-1 flex-1">
-                <Input
+              <div className="space-y-2">
+                <Textarea
                   value={newListTitle}
                   onChange={(e) => setNewListTitle(e.target.value)}
-                  className={`h-8 text-base font-semibold ${list?.theme === 'christmas' ? 'bg-white text-black' : ''}`}
+                  className={`min-h-[80px] text-base font-semibold ${list?.theme === 'christmas' ? 'bg-white text-black' : ''}`}
                   placeholder="List name"
                   autoFocus
                 />
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleUpdateTitle}
-                  disabled={isUpdatingTitle}
-                  className="h-7 w-7 p-1 text-green-600"
-                >
-                  {isUpdatingTitle ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save size={14} />}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => {
-                    setIsEditingTitle(false);
-                    setNewListTitle(list?.title || "");
-                  }}
-                  className="h-7 w-7 p-1 text-red-600"
-                >
-                  <X size={14} />
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingTitle(false);
+                      setNewListTitle(list?.title || "");
+                    }}
+                    className={`h-7 text-xs ${
+                      list?.theme === 'christmas' ? 'bg-white hover:bg-gray-100 text-gray-800' : ''
+                    }`}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleUpdateTitle}
+                    disabled={isUpdatingTitle}
+                    className={`h-7 text-xs ${
+                      list?.theme === 'christmas' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''
+                    }`}
+                  >
+                    {isUpdatingTitle ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      "Save"
+                    )}
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="flex-1 min-w-0">
@@ -431,7 +442,7 @@ export default function ListPage() {
                     value={newItemContent}
                     onChange={(e) => setNewItemContent(e.target.value)}
                     placeholder="Enter item name"
-                    className="h-9"
+                    className={`h-9 ${list?.theme === 'christmas' ? 'bg-white text-black' : ''}`}
                     required
                   />
                 </div>
@@ -439,7 +450,11 @@ export default function ListPage() {
                   type="submit"
                   size="sm"
                   disabled={isCreatingItem}
-                  className="whitespace-nowrap h-9"
+                  className={`whitespace-nowrap h-9 ${
+                    list?.theme === 'christmas' 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                      : ''
+                  }`}
                 >
                   {isCreatingItem ? (
                     <>

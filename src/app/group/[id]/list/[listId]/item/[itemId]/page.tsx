@@ -476,7 +476,7 @@ export default function ItemPage() {
                 <Textarea
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
-                  className="min-h-[80px] text-base font-semibold"
+                  className={`min-h-[80px] text-base font-semibold ${listTheme === 'christmas' ? 'bg-white text-black' : ''}`}
                   placeholder="Item name"
                   autoFocus
                 />
@@ -488,7 +488,9 @@ export default function ItemPage() {
                       setIsEditingName(false);
                       setNewItemName(item?.content || "");
                     }}
-                    className="h-7 text-xs"
+                    className={`h-7 text-xs ${
+                      listTheme === 'christmas' ? 'bg-white hover:bg-gray-100 text-gray-800' : ''
+                    }`}
                   >
                     Cancel
                   </Button>
@@ -497,7 +499,9 @@ export default function ItemPage() {
                     size="sm"
                     onClick={handleUpdateName}
                     disabled={isUpdatingName}
-                    className="h-7 text-xs"
+                    className={`h-7 text-xs ${
+                      listTheme === 'christmas' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''
+                    }`}
                   >
                     {isUpdatingName ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -532,7 +536,7 @@ export default function ItemPage() {
               variant="destructive" 
               size="sm"
               onClick={() => setShowDeleteDialog(true)}
-              className="h-7 shrink-0"
+              className={`h-7 shrink-0 ${listTheme === 'christmas' ? 'bg-red-700 hover:bg-red-800' : ''}`}
             >
               <Trash2 size={14} className="mr-1" />
               <span className="hidden sm:inline">Delete</span>
@@ -566,14 +570,16 @@ export default function ItemPage() {
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Add a comment..."
-                    className="h-9"
+                    className={`h-9 ${listTheme === 'christmas' ? 'bg-white text-black' : ''}`}
                   />
                 </div>
                 <Button
                   type="submit"
                   size="sm"
                   disabled={isAddingComment}
-                  className="whitespace-nowrap h-9"
+                  className={`whitespace-nowrap h-9 ${
+                    listTheme === 'christmas' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''
+                  }`}
                 >
                   {isAddingComment ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -635,7 +641,7 @@ export default function ItemPage() {
                           <Textarea
                             value={editedCommentContent}
                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditedCommentContent(e.target.value)}
-                            className="min-h-[80px] text-sm"
+                            className={`min-h-[80px] text-sm ${listTheme === 'christmas' ? 'bg-white text-black' : ''}`}
                             autoFocus
                           />
                           <div className="flex justify-end gap-2">
@@ -643,7 +649,9 @@ export default function ItemPage() {
                               variant="outline"
                               size="sm"
                               onClick={cancelEditingComment}
-                              className="h-7 text-xs"
+                              className={`h-7 text-xs ${
+                                listTheme === 'christmas' ? 'bg-white hover:bg-gray-100 text-gray-800' : ''
+                              }`}
                             >
                               Cancel
                             </Button>
@@ -652,7 +660,9 @@ export default function ItemPage() {
                               size="sm"
                               onClick={() => updateComment(comment.id)}
                               disabled={isUpdatingComment}
-                              className="h-7 text-xs"
+                              className={`h-7 text-xs ${
+                                listTheme === 'christmas' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''
+                              }`}
                             >
                               {isUpdatingComment ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
