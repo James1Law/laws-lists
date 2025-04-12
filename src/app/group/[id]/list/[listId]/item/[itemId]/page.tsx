@@ -63,7 +63,6 @@ export default function ItemPage() {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editedCommentContent, setEditedCommentContent] = useState("");
   const [isUpdatingComment, setIsUpdatingComment] = useState(false);
-  const [hoverCommentId, setHoverCommentId] = useState<string | null>(null);
   
   // For item name editing
   const [isEditingName, setIsEditingName] = useState(false);
@@ -593,41 +592,36 @@ export default function ItemPage() {
                     <div 
                       key={comment.id} 
                       className="p-3 rounded-md border text-sm relative"
-                      onMouseEnter={() => setHoverCommentId(comment.id)}
-                      onMouseLeave={() => setHoverCommentId(null)}
-                      onTouchStart={() => setHoverCommentId(comment.id)}
                     >
-                      {/* Show edit/delete buttons on hover */}
-                      {(hoverCommentId === comment.id || editingCommentId === comment.id) && (
-                        <div className="absolute top-2 right-2 flex gap-1 touch-manipulation">
-                          {editingCommentId !== comment.id && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 sm:h-6 sm:w-6 rounded-full bg-gray-50"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditingComment(comment);
-                                }}
-                              >
-                                <Pencil size={16} className="text-gray-500" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 sm:h-6 sm:w-6 rounded-full bg-gray-50"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteComment(comment.id);
-                                }}
-                              >
-                                <Trash2 size={16} className="text-red-500" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      )}
+                      {/* Always show edit/delete buttons */}
+                      <div className="absolute top-2 right-2 flex gap-1">
+                        {editingCommentId !== comment.id && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 sm:h-6 sm:w-6 rounded-full bg-gray-50 hover:bg-gray-100 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditingComment(comment);
+                              }}
+                            >
+                              <Pencil size={14} className="text-gray-500" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 sm:h-6 sm:w-6 rounded-full bg-gray-50 hover:bg-gray-100 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteComment(comment.id);
+                              }}
+                            >
+                              <Trash2 size={14} className="text-red-500" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                       
                       {/* Edit mode */}
                       {editingCommentId === comment.id ? (
@@ -664,7 +658,7 @@ export default function ItemPage() {
                         </div>
                       ) : (
                         <>
-                          <p className="break-words pr-12">{comment.content}</p>
+                          <p className="break-words pr-16">{comment.content}</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {formatDate(comment.created_at)}
                           </p>

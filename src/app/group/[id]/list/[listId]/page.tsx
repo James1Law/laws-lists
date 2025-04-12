@@ -279,53 +279,6 @@ export default function ListPage() {
     router.push(`/group/${groupId}/list/${listId}/item/${item.id}`);
   };
 
-  // Toggle item bought status with animation
-  const toggleItemCompletion = async (e: React.MouseEvent<HTMLInputElement> | React.ChangeEvent<HTMLInputElement>, item: Item) => {
-    e.stopPropagation(); // Prevent navigation
-    
-    if (!item) return;
-    
-    const currentState = item.bought;
-    const targetElement = e.currentTarget;
-    const elementRect = targetElement.getBoundingClientRect();
-    
-    // Optimistically update UI
-    setItems(prevItems => 
-      prevItems.map(i => i.id === item.id ? { ...i, bought: !currentState } : i)
-    );
-    
-    try {
-      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${item.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ bought: !currentState }),
-      });
-      
-      if (!response.ok) {
-        // If error, revert the change
-        setItems(prevItems =>
-          prevItems.map(i => i.id === item.id ? { ...i, bought: currentState } : i)
-        );
-        
-        throw new Error('Failed to update item');
-      }
-      
-      // Show animation when marking as bought (not when unmarking)
-      if (!currentState && list?.theme && list.theme !== 'default') {
-        import('@/lib/animations').then(({ triggerItemAnimation }) => {
-          triggerItemAnimation(elementRect);
-        });
-      }
-      
-      toast.success(currentState ? 'Item marked as not bought' : 'Item marked as bought');
-    } catch (error) {
-      console.error("Error toggling item status:", error);
-      toast.error("Failed to update item");
-    }
-  };
-
   useEffect(() => {
     // Check authentication status
     const auth = sessionStorage.getItem(`group_auth_${groupId}`);
@@ -340,6 +293,29 @@ export default function ListPage() {
     fetchListDetails();
     fetchItems();
   }, [groupId, listId, router, fetchListDetails, fetchItems]);
+
+  // Add effect to refetch items when returning to this page
+  useEffect(() => {
+    // Add event listener for when the page becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchItems();
+      }
+    };
+
+    // Add event listener for when the window regains focus
+    const handleFocus = () => {
+      fetchItems();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchItems]);
 
   if (isLoading) {
     return (
@@ -364,21 +340,29 @@ export default function ListPage() {
           variant="outline" 
           size="default" 
           onClick={() => router.push(`/group/${groupId}`)}
-          className="w-full sm:w-auto flex items-center justify-center gap-1 mb-2 bg-white border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors"
+          className={`w-full sm:w-auto flex items-center justify-center gap-1 mb-2 ${
+            list?.theme === 'christmas' 
+              ? 'bg-white/20 border-white/30 text-white hover:bg-white/30 transition-colors' 
+              : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors'
+          }`}
         >
           <ArrowLeft size={16} />
           <span>Back to Lists</span>
         </Button>
         
         {/* List Header */}
-        <header className="flex justify-between items-center gap-2 border-b pb-2 bg-white p-3 rounded-md shadow-sm">
+        <header className={`flex justify-between items-center gap-2 border-b pb-2 p-3 rounded-md shadow-sm ${
+          list?.theme === 'christmas' 
+            ? 'bg-white/90 border-white/30' 
+            : 'bg-white'
+        }`}>
           <div className="flex-1 min-w-0">
             {isEditingTitle ? (
               <div className="flex items-center gap-1 flex-1">
                 <Input
                   value={newListTitle}
                   onChange={(e) => setNewListTitle(e.target.value)}
-                  className="h-8 text-base font-semibold"
+                  className={`h-8 text-base font-semibold ${list?.theme === 'christmas' ? 'bg-white text-black' : ''}`}
                   placeholder="List name"
                   autoFocus
                 />
@@ -406,7 +390,7 @@ export default function ListPage() {
             ) : (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
-                  <h1 className="text-xl font-bold truncate">
+                  <h1 className={`text-xl font-bold truncate ${list?.theme === 'christmas' ? 'text-black' : ''}`}>
                     {theme.emoji && list?.theme !== 'default' && (
                       <span className="mr-1" aria-hidden="true">{theme.emoji}</span>
                     )}
@@ -416,7 +400,7 @@ export default function ListPage() {
                     variant="ghost" 
                     size="sm"
                     onClick={() => setIsEditingTitle(true)}
-                    className="h-7 w-7 p-1 text-gray-500"
+                    className={`h-7 w-7 p-1 ${list?.theme === 'christmas' ? 'text-gray-800 hover:bg-white/20' : 'text-gray-500'}`}
                   >
                     <Edit size={12} />
                   </Button>
@@ -429,7 +413,7 @@ export default function ListPage() {
             variant="destructive" 
             size="sm"
             onClick={() => setShowDeleteDialog(true)}
-            className="h-7 shrink-0"
+            className={`h-7 shrink-0 ${list?.theme === 'christmas' ? 'bg-red-700 hover:bg-red-800' : ''}`}
           >
             <Trash2 size={14} className="mr-1" />
             <span className="hidden sm:inline">Delete</span>
@@ -495,15 +479,8 @@ export default function ListPage() {
                       onClick={() => navigateToItem(item)}
                     >
                       <div className="flex items-center flex-1 min-w-0 gap-2">
-                        <input
-                          type="checkbox"
-                          checked={item.bought}
-                          onChange={(e) => toggleItemCompletion(e, item)}
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                          onClick={(e) => e.stopPropagation()}
-                        />
                         <span 
-                          className={`${item.bought ? "text-muted-foreground line-through" : ""}`}
+                          className={`${item.bought ? "text-muted-foreground line-through" : ""} pl-1`}
                           style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
                         >
                           {item.content}
