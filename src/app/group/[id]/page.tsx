@@ -9,6 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Plus, ArrowLeft, LogOut, Lock, ChevronRight, GripVertical, Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DndContext,
   closestCenter,
   KeyboardSensor,
@@ -41,7 +49,23 @@ type List = {
   position: number | null;
   totalItems?: number;
   boughtItems?: number;
+  theme?: string;
 };
+
+// Theme definitions
+type ThemeOption = {
+  id: string;
+  label: string;
+  emoji: string;
+  bgClass?: string;
+};
+
+// Theme options
+const themeOptions: ThemeOption[] = [
+  { id: "default", label: "Default", emoji: "" },
+  { id: "birthday", label: "Birthday", emoji: "🎂", bgClass: "bg-yellow-50" },
+  { id: "christmas", label: "Christmas", emoji: "🎄", bgClass: "bg-emerald-900 text-white" },
+];
 
 // Sortable list item component
 function SortableListItem({ list, onClick }: { list: List, onClick: () => void }) {
@@ -65,6 +89,9 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
   // Calculate totals with fallbacks for older data that might not have the counts
   const totalItems = list.totalItems ?? 0;
   const boughtItems = list.boughtItems ?? 0;
+  
+  // Get theme information if available
+  const theme = themeOptions.find(t => t.id === list.theme) || themeOptions[0];
 
   return (
     <div
@@ -74,17 +101,23 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
         isDragging && "opacity-70"
       )}
     >
-      <Card className="relative hover:bg-accent/5 transition-colors border-muted overflow-hidden">
+      <Card className={cn(
+        "relative hover:bg-accent/5 transition-colors border-muted overflow-hidden",
+        theme.bgClass && list.theme !== 'default' ? theme.bgClass : ""
+      )}>
         {/* Drag handle with increased size */}
         <div
           ref={setNodeRef}
           {...attributes}
           {...listeners}
-          className="absolute top-1/2 left-1.5 -translate-y-1/2 cursor-grab active:cursor-grabbing p-1.5 h-8 w-8 rounded-md hover:bg-accent/10 flex items-center justify-center z-10"
+          className={cn(
+            "absolute top-1/2 left-1.5 -translate-y-1/2 cursor-grab active:cursor-grabbing p-1.5 h-8 w-8 rounded-md hover:bg-accent/10 flex items-center justify-center z-10",
+            list.theme === 'christmas' ? "text-white/80 hover:bg-white/20" : "text-muted-foreground"
+          )}
           style={{ touchAction: 'none' }}
           title="Drag to reorder"
         >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <GripVertical className="h-4 w-4" />
         </div>
         
         {/* Optimized single-row layout */}
@@ -94,15 +127,23 @@ function SortableListItem({ list, onClick }: { list: List, onClick: () => void }
         >
           {/* List title - left aligned, truncated if needed */}
           <div className="flex-1 min-w-0 mr-3">
-            <h3 className="font-medium text-sm truncate">{list.title}</h3>
+            <h3 className="font-medium text-sm truncate">
+              {theme.emoji && list.theme !== 'default' && (
+                <span className="mr-1" aria-hidden="true">{theme.emoji}</span>
+              )}
+              {list.title}
+            </h3>
           </div>
           
           {/* Counter and chevron in one group - right aligned */}
-          <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+          <div className={cn(
+            "flex items-center gap-2 shrink-0",
+            list.theme === 'christmas' ? "text-white/80" : "text-muted-foreground"
+          )}>
             {/* Progress counter */}
             <div className="text-xs flex items-center whitespace-nowrap">
               <span>{boughtItems} / {totalItems} bought</span>
-              <span className="text-green-500 ml-1 inline-flex items-center">
+              <span className={cn("ml-1 inline-flex items-center", list.theme === 'christmas' ? "text-green-300" : "text-green-500")}>
                 <Check className="h-3 w-3" />
               </span>
             </div>
@@ -128,6 +169,10 @@ export default function GroupPage({ params }: { params: { id: string } }) {
   const [newListName, setNewListName] = useState("");
   const [isCreatingList, setIsCreatingList] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  
+  // Modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<string>("default");
 
   // Set up dnd-kit sensors with stricter activation constraints
   const sensors = useSensors(
@@ -294,7 +339,10 @@ export default function GroupPage({ params }: { params: { id: string } }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name: newListName }),
+        body: JSON.stringify({ 
+          name: newListName,
+          theme: selectedTheme
+        }),
       });
       
       if (!response.ok) {
@@ -307,6 +355,8 @@ export default function GroupPage({ params }: { params: { id: string } }) {
       // Add to local state
       setLists(prevLists => [newList, ...prevLists]);
       setNewListName("");
+      setSelectedTheme("default");
+      setShowCreateModal(false);
       
       toast.success(`List "${newListName}" created`);
     } catch (error: unknown) {
@@ -326,6 +376,13 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     sessionStorage.removeItem(`group_auth_${params.id}`);
     setIsAuthenticated(false);
     toast.info("Logged out from group");
+  };
+
+  // Open the create list modal
+  const openCreateModal = () => {
+    setNewListName("");
+    setSelectedTheme("default");
+    setShowCreateModal(true);
   };
 
   // Navigate to a list
@@ -474,35 +531,14 @@ export default function GroupPage({ params }: { params: { id: string } }) {
         <div className="grid grid-cols-1 gap-3">
           <Card className="shadow-sm">
             <CardContent className="p-3">
-              <form onSubmit={handleCreateList} className="flex gap-2">
-                <div className="flex-1">
-                  <Input
-                    type="text"
-                    placeholder="Enter list name"
-                    value={newListName}
-                    onChange={(e) => setNewListName(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
-                <Button 
-                  type="submit"
-                  size="sm"
-                  disabled={isCreatingList}
-                  className="h-9"
-                >
-                  {isCreatingList ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                      Adding...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add List
-                    </>
-                  )}
-                </Button>
-              </form>
+              <Button 
+                onClick={openCreateModal}
+                className="w-full h-9 flex items-center justify-center"
+                disabled={isCreatingList}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add New List
+              </Button>
             </CardContent>
           </Card>
           
@@ -557,6 +593,73 @@ export default function GroupPage({ params }: { params: { id: string } }) {
           </div>
         </div>
       </div>
+      
+      {/* Create List Modal */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New List</DialogTitle>
+            <DialogDescription>
+              Enter a name and choose a theme for your new list.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleCreateList} className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="listName">List Name</Label>
+              <Input
+                id="listName"
+                type="text"
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                placeholder="Enter list name"
+                className="w-full"
+                autoFocus
+                required
+              />
+            </div>
+            
+            <div className="space-y-3">
+              <Label>Theme</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {themeOptions.map((theme) => (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => setSelectedTheme(theme.id)}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-3 rounded-md border text-sm transition-colors",
+                      selectedTheme === theme.id
+                        ? "border-primary bg-primary/5"
+                        : "border-input hover:bg-accent/5",
+                      theme.bgClass && selectedTheme === theme.id ? theme.bgClass : ""
+                    )}
+                  >
+                    <span className="text-2xl mb-1">{theme.emoji || "🔵"}</span>
+                    <span>{theme.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isCreatingList}>
+                {isCreatingList ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create List"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

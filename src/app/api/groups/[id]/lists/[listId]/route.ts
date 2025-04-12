@@ -13,7 +13,7 @@ export async function GET(
     // Fetch the list
     const { data, error } = await supabase
       .from('lists')
-      .select('id, title, group_id, created_at')
+      .select('id, title, group_id, created_at, theme')
       .eq('id', params.listId)
       .eq('group_id', params.id)
       .single();

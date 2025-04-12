@@ -13,7 +13,7 @@ export async function GET(
     // Fetch lists for the group
     const { data, error } = await supabase
       .from('lists')
-      .select('id, title, created_at, group_id, position')
+      .select('id, title, created_at, group_id, position, theme')
       .eq('group_id', params.id)
       .order('position', { ascending: true });
     
@@ -88,7 +88,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { name } = await request.json();
+    const { name, theme } = await request.json();
     
     // Validate input
     if (!name || typeof name !== 'string' || name.trim() === '') {
@@ -125,6 +125,7 @@ export async function POST(
           title: name.trim(), // Map the name from request to title in database
           group_id: params.id,
           position: newPosition,
+          theme: theme || 'default', // Save the theme
         },
       ])
       .select()

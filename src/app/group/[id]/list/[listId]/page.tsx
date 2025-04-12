@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Plus, Trash2, Edit, Save, X, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +26,23 @@ type ListDetails = {
   title: string;
   group_id: string;
   created_at: string;
+  theme?: string;
 };
+
+// Theme definitions
+type ThemeOption = {
+  id: string;
+  label: string;
+  emoji: string;
+  bgClass?: string;
+};
+
+// Theme options - should match those in group page
+const themeOptions: ThemeOption[] = [
+  { id: "default", label: "Default", emoji: "" },
+  { id: "birthday", label: "Birthday", emoji: "🎂", bgClass: "bg-yellow-50" },
+  { id: "christmas", label: "Christmas", emoji: "🎄", bgClass: "bg-emerald-900 text-white" },
+];
 
 type Item = {
   id: string;
@@ -56,6 +73,47 @@ export default function ListPage() {
   // For list deletion
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Animation flags
+  const animationTriggered = useRef(false);
+  const cleanupFn = useRef<(() => void) | null>(null);
+
+  // Initialize animations based on theme
+  useEffect(() => {
+    if (!list || isLoading || animationTriggered.current) return;
+    
+    const timer = setTimeout(() => {
+      // Only run animations if we have a special theme
+      if (list.theme === 'birthday') {
+        import('@/lib/animations').then(({ triggerBirthdayAnimation }) => {
+          triggerBirthdayAnimation();
+          animationTriggered.current = true;
+        });
+      } else if (list.theme === 'christmas') {
+        import('@/lib/animations').then(({ createSnowfall, removeSnowfall }) => {
+          // Clean up any existing snowfall first
+          removeSnowfall();
+          // Create new snowfall
+          cleanupFn.current = createSnowfall();
+          animationTriggered.current = true;
+        });
+      }
+    }, 300); // Small delay to ensure the page is rendered
+    
+    return () => {
+      clearTimeout(timer);
+      // Clean up any snowfall when unmounting
+      if (cleanupFn.current) {
+        cleanupFn.current();
+        cleanupFn.current = null;
+      } else if (list.theme === 'christmas') {
+        // In case the cleanup function wasn't captured
+        import('@/lib/animations').then(({ removeSnowfall }) => {
+          removeSnowfall();
+        });
+      }
+    };
+  }, [list, isLoading]);
 
   // Wrap the functions in useCallback to avoid dependency issues
   const fetchListDetails = useCallback(async () => {
@@ -165,6 +223,10 @@ export default function ListPage() {
   // Create a new item
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const submitButtonRect = submitButton?.getBoundingClientRect() || { left: 0, top: 0, width: 0, height: 0 };
+    
     if (!newItemContent.trim()) {
       toast.error("Please enter an item");
       return;
@@ -192,6 +254,13 @@ export default function ListPage() {
       setItems(prevItems => [newItem, ...prevItems]);
       setNewItemContent("");
       
+      // Show animation when adding a new item
+      if (list?.theme && list.theme !== 'default') {
+        import('@/lib/animations').then(({ triggerItemAnimation }) => {
+          triggerItemAnimation(submitButtonRect);
+        });
+      }
+      
       toast.success(`Item added`);
     } catch (error: unknown) {
       console.error("Error creating item:", error);
@@ -208,6 +277,53 @@ export default function ListPage() {
   // Navigate to item detail page
   const navigateToItem = (item: Item) => {
     router.push(`/group/${groupId}/list/${listId}/item/${item.id}`);
+  };
+
+  // Toggle item bought status with animation
+  const toggleItemCompletion = async (e: React.MouseEvent<HTMLInputElement> | React.ChangeEvent<HTMLInputElement>, item: Item) => {
+    e.stopPropagation(); // Prevent navigation
+    
+    if (!item) return;
+    
+    const currentState = item.bought;
+    const targetElement = e.currentTarget;
+    const elementRect = targetElement.getBoundingClientRect();
+    
+    // Optimistically update UI
+    setItems(prevItems => 
+      prevItems.map(i => i.id === item.id ? { ...i, bought: !currentState } : i)
+    );
+    
+    try {
+      const response = await fetch(`/api/groups/${groupId}/lists/${listId}/items/${item.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ bought: !currentState }),
+      });
+      
+      if (!response.ok) {
+        // If error, revert the change
+        setItems(prevItems =>
+          prevItems.map(i => i.id === item.id ? { ...i, bought: currentState } : i)
+        );
+        
+        throw new Error('Failed to update item');
+      }
+      
+      // Show animation when marking as bought (not when unmarking)
+      if (!currentState && list?.theme && list.theme !== 'default') {
+        import('@/lib/animations').then(({ triggerItemAnimation }) => {
+          triggerItemAnimation(elementRect);
+        });
+      }
+      
+      toast.success(currentState ? 'Item marked as not bought' : 'Item marked as bought');
+    } catch (error) {
+      console.error("Error toggling item status:", error);
+      toast.error("Failed to update item");
+    }
   };
 
   useEffect(() => {
@@ -233,8 +349,15 @@ export default function ListPage() {
     );
   }
 
+  // Get the theme information for background styling
+  const theme = themeOptions.find(t => t.id === list?.theme) || themeOptions[0];
+  const bgClass = theme.bgClass && list?.theme !== 'default' ? theme.bgClass : 'bg-background';
+
   return (
-    <div className="min-h-screen p-2 sm:p-4 bg-background">
+    <div className={cn(
+      "min-h-screen p-2 sm:p-4 transition-colors duration-300",
+      bgClass
+    )}>
       <div className="max-w-4xl mx-auto space-y-4">
         {/* Back button - more prominent and positioned above the header */}
         <Button 
@@ -248,7 +371,7 @@ export default function ListPage() {
         </Button>
         
         {/* List Header */}
-        <header className="flex justify-between items-center gap-2 border-b pb-2">
+        <header className="flex justify-between items-center gap-2 border-b pb-2 bg-white p-3 rounded-md shadow-sm">
           <div className="flex-1 min-w-0">
             {isEditingTitle ? (
               <div className="flex items-center gap-1 flex-1">
@@ -283,7 +406,12 @@ export default function ListPage() {
             ) : (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
-                  <h1 className="text-xl font-bold truncate">{list?.title || 'Loading list...'}</h1>
+                  <h1 className="text-xl font-bold truncate">
+                    {theme.emoji && list?.theme !== 'default' && (
+                      <span className="mr-1" aria-hidden="true">{theme.emoji}</span>
+                    )}
+                    {list?.title || 'Loading list...'}
+                  </h1>
                   <Button 
                     variant="ghost" 
                     size="sm"
@@ -310,7 +438,7 @@ export default function ListPage() {
 
         <div className="grid grid-cols-1 gap-3">
           {/* Compact Create Item Form */}
-          <Card className="shadow-sm">
+          <Card className="shadow-sm bg-white">
             <CardContent className="p-3">
               <form onSubmit={handleCreateItem} className="flex gap-2">
                 <div className="flex-1">
@@ -346,7 +474,7 @@ export default function ListPage() {
           </Card>
 
           {/* Items List */}
-          <Card className="shadow-sm">
+          <Card className="shadow-sm bg-white">
             <CardHeader className="p-3 pb-0">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-base">Items</CardTitle>
@@ -363,12 +491,19 @@ export default function ListPage() {
                   items.map(item => (
                     <div 
                       key={item.id} 
-                      className={`relative flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-colors ${item.bought ? 'bg-green-50/50' : ''}`}
+                      className={`relative flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-colors ${item.bought ? 'bg-green-50/50' : 'bg-white'}`}
                       onClick={() => navigateToItem(item)}
                     >
                       <div className="flex items-center flex-1 min-w-0 gap-2">
+                        <input
+                          type="checkbox"
+                          checked={item.bought}
+                          onChange={(e) => toggleItemCompletion(e, item)}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
+                        />
                         <span 
-                          className={`${item.bought ? "text-muted-foreground" : ""}`}
+                          className={`${item.bought ? "text-muted-foreground line-through" : ""}`}
                           style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
                         >
                           {item.content}
