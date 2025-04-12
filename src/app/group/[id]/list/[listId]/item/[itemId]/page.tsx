@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Trash2, Edit, Save, X, Pencil } from "lucide-react";
+import { Loader2, ArrowLeft, Trash2, Edit, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -472,34 +472,40 @@ export default function ItemPage() {
         <header className="flex justify-between items-center gap-2 border-b pb-4">
           <div className="flex-1 min-w-0">
             {isEditingName ? (
-              <div className="flex items-center gap-1 flex-1">
-                <Input
+              <div className="space-y-2">
+                <Textarea
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
-                  className="h-8 text-base font-semibold"
+                  className="min-h-[80px] text-base font-semibold"
                   placeholder="Item name"
                   autoFocus
                 />
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleUpdateName}
-                  disabled={isUpdatingName}
-                  className="h-7 w-7 p-1 text-green-600"
-                >
-                  {isUpdatingName ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save size={14} />}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => {
-                    setIsEditingName(false);
-                    setNewItemName(item?.content || "");
-                  }}
-                  className="h-7 w-7 p-1 text-red-600"
-                >
-                  <X size={14} />
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingName(false);
+                      setNewItemName(item?.content || "");
+                    }}
+                    className="h-7 text-xs"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleUpdateName}
+                    disabled={isUpdatingName}
+                    className="h-7 text-xs"
+                  >
+                    {isUpdatingName ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      "Save"
+                    )}
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-1">
