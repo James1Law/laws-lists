@@ -162,7 +162,17 @@ export default function ItemPage() {
         });
       }
       
+      // Show success toast
       toast.success(currentState ? 'Item marked as not bought' : 'Item marked as bought');
+      
+      // If marking as bought (not unmarking), wait ~500ms then redirect back to list page
+      if (!currentState) {
+        setTimeout(() => {
+          // Redirect to list page after delay, passing the item ID as a query parameter
+          // to indicate it was recently bought
+          router.push(`/group/${groupId}/list/${listId}?recentItem=${itemId}`);
+        }, 500); // 500ms delay to allow toast to be visible
+      }
     } catch (error) {
       console.error("Error toggling item status:", error);
       toast.error("Failed to update item");

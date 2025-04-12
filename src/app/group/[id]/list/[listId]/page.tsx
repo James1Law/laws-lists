@@ -79,6 +79,8 @@ export default function ListPage() {
   const animationTriggered = useRef(false);
   const cleanupFn = useRef<(() => void) | null>(null);
 
+  const [recentlyBoughtItemId, setRecentlyBoughtItemId] = useState<string | null>(null);
+
   // Initialize animations based on theme
   useEffect(() => {
     if (!list || isLoading || animationTriggered.current) return;
@@ -140,7 +142,15 @@ export default function ListPage() {
         throw new Error('Failed to fetch items');
       }
       const data = await response.json();
-      setItems(data || []);
+      
+      // Sort items: unbought items first, then bought items
+      // Within each group, maintain the original order (most recent first)
+      const sortedItems = [...data].sort((a, b) => {
+        if (a.bought === b.bought) return 0; // Maintain original order within groups
+        return a.bought ? 1 : -1; // Unbought items first
+      });
+      
+      setItems(sortedItems || []);
     } catch (error) {
       console.error("Error fetching items:", error);
       toast.error("Failed to load items");
@@ -221,17 +231,10 @@ export default function ListPage() {
     }
   };
 
-  // Create a new item
+  // Handle creating a new item
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const submitButton = form.querySelector('button[type="submit"]');
-    const submitButtonRect = submitButton?.getBoundingClientRect() || { left: 0, top: 0, width: 0, height: 0 };
-    
-    if (!newItemContent.trim()) {
-      toast.error("Please enter an item");
-      return;
-    }
+    if (!newItemContent.trim()) return;
     
     setIsCreatingItem(true);
     
@@ -251,18 +254,17 @@ export default function ListPage() {
       
       const newItem = await response.json();
       
-      // Add to local state
-      setItems(prevItems => [newItem, ...prevItems]);
-      setNewItemContent("");
-      
-      // Show animation when adding a new item
-      if (list?.theme && list.theme !== 'default') {
-        import('@/lib/animations').then(({ triggerItemAnimation }) => {
-          triggerItemAnimation(submitButtonRect);
+      // Add the new item at the beginning and maintain sorting (unbought items first)
+      setItems(prevItems => {
+        const updatedItems = [newItem, ...prevItems];
+        return updatedItems.sort((a, b) => {
+          if (a.bought === b.bought) return 0;
+          return a.bought ? 1 : -1;
         });
-      }
+      });
       
-      toast.success(`Item added`);
+      setNewItemContent("");
+      toast.success("Item added");
     } catch (error: unknown) {
       console.error("Error creating item:", error);
       if (error instanceof Error) {
@@ -275,7 +277,7 @@ export default function ListPage() {
     }
   };
 
-  // Navigate to item detail page
+  // Navigate to item detail
   const navigateToItem = (item: Item) => {
     router.push(`/group/${groupId}/list/${listId}/item/${item.id}`);
   };
@@ -317,6 +319,27 @@ export default function ListPage() {
       window.removeEventListener('focus', handleFocus);
     };
   }, [fetchItems]);
+
+  // Effect to check for recently bought items when the list changes
+  useEffect(() => {
+    // Check for a recently bought item from URL search params
+    const searchParams = new URLSearchParams(window.location.search);
+    const recentItemId = searchParams.get('recentItem');
+    
+    if (recentItemId) {
+      // Set the recently bought item ID
+      setRecentlyBoughtItemId(recentItemId);
+      
+      // Clear the URL parameter without refreshing the page
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      
+      // Clear the highlight after animation completes
+      setTimeout(() => {
+        setRecentlyBoughtItemId(null);
+      }, 2000); // Remove highlight after 2 seconds
+    }
+  }, [items]);
 
   if (isLoading) {
     return (
@@ -487,35 +510,83 @@ export default function ListPage() {
                 {items.length === 0 ? (
                   <p className="text-center text-muted-foreground py-3 text-sm">No items yet</p>
                 ) : (
-                  items.map(item => (
-                    <div 
-                      key={item.id} 
-                      className={`relative flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-colors ${item.bought ? 'bg-green-50/50' : 'bg-white'}`}
-                      onClick={() => navigateToItem(item)}
-                    >
-                      <div className="flex items-center flex-1 min-w-0 gap-2">
-                        <span 
-                          className={`${item.bought ? "text-muted-foreground line-through" : ""} pl-1`}
-                          style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
+                  <>
+                    {/* Unbought items */}
+                    {items
+                      .filter(item => !item.bought)
+                      .map(item => (
+                        <div 
+                          key={item.id} 
+                          className="relative flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-all duration-300 ease-in-out bg-white"
+                          onClick={() => navigateToItem(item)}
                         >
-                          {item.content}
-                        </span>
-                        {item.bought && (
-                          <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0">
-                            Bought
+                          <div className="flex items-center flex-1 min-w-0 gap-2">
+                            <span 
+                              className="pl-1"
+                              style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
+                            >
+                              {item.content}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end justify-between shrink-0 ml-2">
+                            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                            {item.comment_count > 0 && (
+                              <span className="text-xs text-gray-500 mt-1">
+                                💬 {item.comment_count}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    
+                    {/* Separator if both bought and unbought items exist */}
+                    {items.some(item => item.bought) && items.some(item => !item.bought) && (
+                      <div className="relative my-3 transition-all duration-300 ease-in-out">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t border-gray-200" />
+                        </div>
+                        <div className="relative flex justify-center">
+                          <span className="px-2 text-xs text-muted-foreground bg-white">
+                            Bought items
                           </span>
-                        )}
+                        </div>
                       </div>
-                      <div className="flex flex-col items-end justify-between shrink-0 ml-2">
-                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                        {item.comment_count > 0 && (
-                          <span className="text-xs text-gray-500 mt-1">
-                            💬 {item.comment_count}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                    )}
+                    
+                    {/* Bought items */}
+                    {items
+                      .filter(item => item.bought)
+                      .map(item => (
+                        <div 
+                          key={item.id} 
+                          className={cn(
+                            "relative flex items-center justify-between p-3 rounded-md border text-sm hover:bg-accent/5 cursor-pointer transition-all duration-500 ease-in-out bg-green-50/50",
+                            recentlyBoughtItemId === item.id && "animate-highlight"
+                          )}
+                          onClick={() => navigateToItem(item)}
+                        >
+                          <div className="flex items-center flex-1 min-w-0 gap-2">
+                            <span 
+                              className="text-muted-foreground line-through pl-1"
+                              style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
+                            >
+                              {item.content}
+                            </span>
+                            <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0">
+                              Bought
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end justify-between shrink-0 ml-2">
+                            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                            {item.comment_count > 0 && (
+                              <span className="text-xs text-gray-500 mt-1">
+                                💬 {item.comment_count}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </>
                 )}
               </div>
             </CardContent>
